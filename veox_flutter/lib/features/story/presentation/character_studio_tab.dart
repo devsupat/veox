@@ -36,7 +36,7 @@ class _CharacterStudioTabState extends ConsumerState<CharacterStudioTab> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(characterStudioProvider);
-    final detectedCharacters = state.detectedCharacters;
+    final detectedCharacters = state.characters;
     final isGenerating = state.isDetecting || _isGeneratingMock;
 
     return Row(

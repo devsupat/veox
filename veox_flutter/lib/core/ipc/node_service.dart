@@ -1,86 +1,216 @@
+// lib/core/ipc/node_service.dart
+//
+// Manages the lifecycle of the Node.js sidecar process (engine/main.js).
+//
+// Communication protocol: newline-delimited JSON over stdin/stdout.
+//   Flutter → Node: { id, command, params }
+//   Node → Flutter: { id, type: 'result'|'log'|'system', status, data, error }
+//
+// Key design: every `sendCommand()` call returns a `Future` that resolves
+// when the matching response (same `id`) arrives on stdout. This is done via
+// a `Map<String, Completer>` dictionary. Commands time out after [commandTimeout].
+
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:veox_flutter/core/errors/failures.dart';
+import 'package:veox_flutter/core/utils/logger.dart';
 
+typedef JsonMap = Map<String, dynamic>;
+
+/// Events emitted while Node is running — useful for a live log panel.
+class NodeLogEvent {
+  const NodeLogEvent({required this.level, required this.message});
+  final String level;
+  final String message;
+}
+
+/// [NodeService] is a singleton that orchestrates the Node.js child process.
+///
+/// Lifecycle:
+///   1. `startEngine()` — spawns the process, sets up listeners.
+///   2. `sendCommand()` — sends JSON, awaits correlated response.
+///   3. `stopEngine()` — kills the process cleanly.
+///
+/// The service auto-restarts if the process dies unexpectedly.
 class NodeService {
+  NodeService._();
+  static final NodeService instance = NodeService._();
+
+  // ---------------------------------------------------------------------------
+  // State
+  // ---------------------------------------------------------------------------
+
   Process? _process;
-  final StreamController<Map<String, dynamic>> _logController = StreamController.broadcast();
+  bool _running = false;
 
-  Stream<Map<String, dynamic>> get logs => _logController.stream;
+  /// How long to wait for any single command response.
+  static const commandTimeout = Duration(minutes: 5);
 
+  /// Pending commands awaiting their matching response from Node.
+  final Map<String, Completer<JsonMap>> _pending = {};
+
+  /// Broadcast stream of log/system events for the UI.
+  final StreamController<NodeLogEvent> _logController =
+      StreamController.broadcast();
+  Stream<NodeLogEvent> get logStream => _logController.stream;
+
+  bool get isRunning => _running;
+
+  // ---------------------------------------------------------------------------
+  // Lifecycle
+  // ---------------------------------------------------------------------------
+
+  /// Starts the Node.js engine. Safe to call multiple times (idempotent).
   Future<void> startEngine() async {
-    // Kill any existing process first
-    kill();
-    
-    // Resolve path to engine/main.js
-    // In production (bundled app), this will be different.
-    // For now, we assume we are running from source or built app structure.
-    String enginePath;
-    if (kDebugMode) {
-      enginePath = 'engine/main.js';
-    } else {
-      // Production path logic (needs to be adjusted based on platform)
-      // On macOS, it might be inside Contents/Resources
-      final exeDir = File(Platform.resolvedExecutable).parent;
-      enginePath = '${exeDir.path}/engine/main.js';
-    }
+    if (_running) return;
+
+    final enginePath = _resolveEnginePath();
+    AppLogger.info('Starting Node engine: node $enginePath', tag: 'Node');
 
     try {
       _process = await Process.start(
-        'node', 
-        [enginePath], 
-        workingDirectory: Directory.current.path,
+        'node',
+        [enginePath],
+        workingDirectory: kDebugMode ? Directory.current.path : null,
       );
-      
-      debugPrint("Node Engine started at PID: ${_process!.pid}");
 
-      // Listen to Stdout (Logs & Results)
-      _process!.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
-        if (line.trim().isEmpty) return;
-        try {
-          final json = jsonDecode(line);
-          _logController.add(json);
-          if (kDebugMode) {
-            print("NODE: $line");
-          }
-        } catch (e) {
-          print("Node Parse Error: $line");
-        }
-      });
+      _running = true;
 
-      // Listen to Stderr (Critical Errors)
-      _process!.stderr.transform(utf8.decoder).listen((data) {
-        print("Node Error: $data");
-      });
-      
-    } catch (e) {
-      print("Failed to start Node Engine: $e");
+      // Listen to stdout — JSON lines, correlated by `id`.
+      _process!.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen(
+            _handleLine,
+            onDone: _handleProcessExit,
+            onError: (Object e) =>
+                AppLogger.error('Node stdout error: $e', tag: 'Node'),
+          );
+
+      // Stderr → log only (shouldn't happen in normal operation).
+      _process!.stderr
+          .transform(utf8.decoder)
+          .listen((data) => AppLogger.warn('Node stderr: $data', tag: 'Node'));
+
+      AppLogger.info('Node engine started (PID ${_process!.pid})', tag: 'Node');
+    } catch (e, st) {
+      _running = false;
+      AppLogger.error('Failed to start Node engine', tag: 'Node', error: e, stackTrace: st);
       rethrow;
     }
   }
 
-  void sendCommand(String id, String command, Map<String, dynamic> params) {
-    if (_process == null) {
-      print("Node Engine not running. Restarting...");
-      startEngine().then((_) => _sendCommandInternal(id, command, params));
-    } else {
-      _sendCommandInternal(id, command, params);
+  /// Sends a command to Node and returns the response payload.
+  ///
+  /// Throws [ProcessFailure] if Node replies with `status: 'error'`.
+  /// Throws [TimeoutException] if no response within [commandTimeout].
+  Future<JsonMap> sendCommand(
+    String commandId,
+    String command,
+    JsonMap params,
+  ) async {
+    if (!_running) {
+      AppLogger.warn('Node not running. Restarting...', tag: 'Node');
+      await startEngine();
     }
+
+    final completer = Completer<JsonMap>();
+    _pending[commandId] = completer;
+
+    final payload = jsonEncode({'id': commandId, 'command': command, 'params': params});
+    _process!.stdin.writeln(payload);
+
+    AppLogger.debug('→ Node [$commandId] $command', tag: 'Node');
+
+    return completer.future.timeout(
+      commandTimeout,
+      onTimeout: () {
+        _pending.remove(commandId);
+        throw ProcessFailure(
+          'Command "$command" timed out after ${commandTimeout.inMinutes}m.',
+          exitCode: -1,
+        );
+      },
+    );
   }
-  
-  void _sendCommandInternal(String id, String command, Map<String, dynamic> params) {
-    final payload = jsonEncode({
-      "id": id,
-      "command": command,
-      "params": params
-    });
-    _process?.stdin.writeln(payload);
-  }
-  
-  void kill() {
+
+  /// Stops the Node engine gracefully, clearing all pending commands.
+  Future<void> stopEngine() async {
+    _running = false;
+
+    // Fail all pending commands.
+    for (final entry in _pending.values) {
+      if (!entry.isCompleted) {
+        entry.completeError(const ProcessFailure('Node engine stopped.'));
+      }
+    }
+    _pending.clear();
+
+    await _process?.stdin.close();
     _process?.kill();
     _process = null;
+
+    AppLogger.info('Node engine stopped.', tag: 'Node');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal
+  // ---------------------------------------------------------------------------
+
+  void _handleLine(String line) {
+    if (line.trim().isEmpty) return;
+
+    JsonMap json;
+    try {
+      json = jsonDecode(line) as JsonMap;
+    } catch (e) {
+      AppLogger.warn('Node non-JSON: $line', tag: 'Node');
+      return;
+    }
+
+    final type = json['type'] as String?;
+    final id = json['id'] as String?;
+
+    switch (type) {
+      case 'result':
+        if (id != null && _pending.containsKey(id)) {
+          final completer = _pending.remove(id)!;
+          if (json['status'] == 'error') {
+            completer.completeError(
+                ProcessFailure('Node error: ${json['error']}'));
+          } else {
+            completer.complete(json['data'] as JsonMap? ?? {});
+          }
+        }
+      case 'log':
+        AppLogger.debug('Node: ${json['msg']}', tag: 'Node');
+        _logController.add(NodeLogEvent(
+            level: 'debug', message: json['msg']?.toString() ?? ''));
+      case 'system':
+        AppLogger.info('Node system: ${json['msg']}', tag: 'Node');
+        _logController.add(NodeLogEvent(
+            level: 'info', message: json['msg']?.toString() ?? ''));
+      default:
+        AppLogger.debug('Node unknown type: $line', tag: 'Node');
+    }
+  }
+
+  void _handleProcessExit() async {
+    if (!_running) return; // intentional stop
+    AppLogger.warn('Node engine exited unexpectedly. Restarting...', tag: 'Node');
+    _running = false;
+    await Future<void>.delayed(const Duration(seconds: 2));
+    startEngine();
+  }
+
+  String _resolveEnginePath() {
+    if (kDebugMode) {
+      return 'engine/main.js';
+    }
+    // In release builds, engine is bundled next to the executable.
+    final exeDir = File(Platform.resolvedExecutable).parent;
+    return '${exeDir.path}/engine/main.js';
   }
 }

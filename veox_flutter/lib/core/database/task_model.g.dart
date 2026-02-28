@@ -42,28 +42,33 @@ const TaskModelSchema = CollectionSchema(
       name: r'payloadJson',
       type: IsarType.string,
     ),
-    r'retryCount': PropertySchema(
+    r'priority': PropertySchema(
       id: 5,
+      name: r'priority',
+      type: IsarType.long,
+    ),
+    r'retryCount': PropertySchema(
+      id: 6,
       name: r'retryCount',
       type: IsarType.long,
     ),
     r'startedAt': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'startedAt',
       type: IsarType.dateTime,
     ),
     r'status': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'status',
       type: IsarType.string,
     ),
     r'taskId': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'taskId',
       type: IsarType.string,
     ),
     r'type': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'type',
       type: IsarType.string,
     )
@@ -112,6 +117,19 @@ const TaskModelSchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'priority': IndexSchema(
+      id: -6477851841645083544,
+      name: r'priority',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'priority',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
     )
   },
   links: {},
@@ -158,11 +176,12 @@ void _taskModelSerialize(
   writer.writeString(offsets[2], object.errorLog);
   writer.writeString(offsets[3], object.outputPath);
   writer.writeString(offsets[4], object.payloadJson);
-  writer.writeLong(offsets[5], object.retryCount);
-  writer.writeDateTime(offsets[6], object.startedAt);
-  writer.writeString(offsets[7], object.status);
-  writer.writeString(offsets[8], object.taskId);
-  writer.writeString(offsets[9], object.type);
+  writer.writeLong(offsets[5], object.priority);
+  writer.writeLong(offsets[6], object.retryCount);
+  writer.writeDateTime(offsets[7], object.startedAt);
+  writer.writeString(offsets[8], object.status);
+  writer.writeString(offsets[9], object.taskId);
+  writer.writeString(offsets[10], object.type);
 }
 
 TaskModel _taskModelDeserialize(
@@ -178,11 +197,12 @@ TaskModel _taskModelDeserialize(
   object.id = id;
   object.outputPath = reader.readStringOrNull(offsets[3]);
   object.payloadJson = reader.readString(offsets[4]);
-  object.retryCount = reader.readLong(offsets[5]);
-  object.startedAt = reader.readDateTimeOrNull(offsets[6]);
-  object.status = reader.readString(offsets[7]);
-  object.taskId = reader.readString(offsets[8]);
-  object.type = reader.readString(offsets[9]);
+  object.priority = reader.readLong(offsets[5]);
+  object.retryCount = reader.readLong(offsets[6]);
+  object.startedAt = reader.readDateTimeOrNull(offsets[7]);
+  object.status = reader.readString(offsets[8]);
+  object.taskId = reader.readString(offsets[9]);
+  object.type = reader.readString(offsets[10]);
   return object;
 }
 
@@ -206,12 +226,14 @@ P _taskModelDeserializeProp<P>(
     case 5:
       return (reader.readLong(offset)) as P;
     case 6:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 8:
       return (reader.readString(offset)) as P;
     case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -235,6 +257,14 @@ extension TaskModelQueryWhereSort
   QueryBuilder<TaskModel, TaskModel, QAfterWhere> anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterWhere> anyPriority() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'priority'),
+      );
     });
   }
 }
@@ -438,6 +468,96 @@ extension TaskModelQueryWhere
               includeUpper: false,
             ));
       }
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterWhereClause> priorityEqualTo(
+      int priority) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'priority',
+        value: [priority],
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterWhereClause> priorityNotEqualTo(
+      int priority) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'priority',
+              lower: [],
+              upper: [priority],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'priority',
+              lower: [priority],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'priority',
+              lower: [priority],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'priority',
+              lower: [],
+              upper: [priority],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterWhereClause> priorityGreaterThan(
+    int priority, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'priority',
+        lower: [priority],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterWhereClause> priorityLessThan(
+    int priority, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'priority',
+        lower: [],
+        upper: [priority],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterWhereClause> priorityBetween(
+    int lowerPriority,
+    int upperPriority, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'priority',
+        lower: [lowerPriority],
+        includeLower: includeLower,
+        upper: [upperPriority],
+        includeUpper: includeUpper,
+      ));
     });
   }
 }
@@ -1056,6 +1176,59 @@ extension TaskModelQueryFilter
     });
   }
 
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> priorityEqualTo(
+      int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'priority',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> priorityGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'priority',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> priorityLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'priority',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> priorityBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'priority',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QAfterFilterCondition> retryCountEqualTo(
       int value) {
     return QueryBuilder.apply(this, (query) {
@@ -1639,6 +1812,18 @@ extension TaskModelQuerySortBy on QueryBuilder<TaskModel, TaskModel, QSortBy> {
     });
   }
 
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByPriority() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'priority', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByPriorityDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'priority', Sort.desc);
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QAfterSortBy> sortByRetryCount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'retryCount', Sort.asc);
@@ -1774,6 +1959,18 @@ extension TaskModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByPriority() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'priority', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByPriorityDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'priority', Sort.desc);
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QAfterSortBy> thenByRetryCount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'retryCount', Sort.asc);
@@ -1870,6 +2067,12 @@ extension TaskModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByPriority() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'priority');
+    });
+  }
+
   QueryBuilder<TaskModel, TaskModel, QDistinct> distinctByRetryCount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'retryCount');
@@ -1939,6 +2142,12 @@ extension TaskModelQueryProperty
   QueryBuilder<TaskModel, String, QQueryOperations> payloadJsonProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'payloadJson');
+    });
+  }
+
+  QueryBuilder<TaskModel, int, QQueryOperations> priorityProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'priority');
     });
   }
 

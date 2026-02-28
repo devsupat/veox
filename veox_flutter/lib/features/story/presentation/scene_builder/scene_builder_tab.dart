@@ -280,12 +280,16 @@ class _SceneBuilderTabState extends ConsumerState<SceneBuilderTab> {
                 width: double.infinity,
                 margin: const EdgeInsets.all(16),
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                     ref.read(sceneBuilderProvider.notifier).renderAllScenes();
-                     ScaffoldMessenger.of(context).showSnackBar(
-                       const SnackBar(content: Text('Scenes added to Render Queue')),
-                     );
-                  },
+                  onPressed: () async {
+                     // Pass the active project ID — for now use a temp placeholder
+                     await ref.read(sceneBuilderProvider.notifier)
+                         .generateSceneImages('', concurrency: 3);
+                     if (context.mounted) {
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         const SnackBar(content: Text('Generating scenes in background…')),
+                       );
+                     }
+                   },
                   icon: const Icon(LucideIcons.clapperboard, size: 18),
                   label: const Text("Generate All Scenes with Characters"),
                   style: ElevatedButton.styleFrom(
@@ -383,8 +387,9 @@ class _SceneBuilderTabState extends ConsumerState<SceneBuilderTab> {
           const SizedBox(height: 8),
           TextButton(
              onPressed: () {
-               ref.read(sceneBuilderProvider.notifier).generateScenesFromStory(
-                 "A futuristic city skyline at night.\n\nA robot walking down the street."
+               ref.read(sceneBuilderProvider.notifier).parseStory(
+                 "A futuristic city skyline at night.\n\nA robot walking down the street.",
+                 projectId: '',
                );
              }, 
              child: const Text("Generate Demo Scenes")
