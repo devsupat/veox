@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:veox_flutter/providers/app_state.dart';
-import 'package:veox_flutter/models/types.dart'; // For SceneStatus
 import 'package:veox_flutter/ui/pages/home_tab.dart';
 import 'package:veox_flutter/ui/pages/reels_tab.dart';
 import 'package:veox_flutter/ui/pages/projects_tab.dart';

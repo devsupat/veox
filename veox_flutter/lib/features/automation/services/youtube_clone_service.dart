@@ -38,26 +38,14 @@ class YouTubeCloneService {
   YouTubeCloneService._();
   static final YouTubeCloneService instance = YouTubeCloneService._();
 
-  static const _promptsSystemPrompt = '''
-You are a creative video producer. You will receive a YouTube video transcript.
-Segment it into visual scenes and generate an image generation prompt for each scene.
-
-Return ONLY valid JSON:
-{
-  "segments": [
-    {
-      "segment_number": 1,
-      "summary": "1-sentence description of this segment",
-      "visual_prompt": "Highly detailed cinematic image prompt for this moment"
-    }
-  ]
-}
-
-Rules:
-- 3 to 20 segments (don't over-segment short videos).
-- Each visual_prompt should be self-contained and evocative.
-- No text outside the JSON.
-''';
+//   ]
+// }
+//
+// Rules:
+// - 3 to 20 segments (don't over-segment short videos).
+// - Each visual_prompt should be self-contained and evocative.
+// - No text outside the JSON.
+// ''';
 
   /// Returns a Stream<CloneProgress> that emits updates as each stage completes.
   Stream<CloneProgress> cloneVideo(String url) async* {

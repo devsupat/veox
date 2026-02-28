@@ -12,7 +12,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veox_flutter/core/errors/failures.dart';
 import 'package:veox_flutter/core/process/process_runner.dart';
-import 'package:veox_flutter/core/utils/logger.dart';
 
 class VideoInfo {
   const VideoInfo({

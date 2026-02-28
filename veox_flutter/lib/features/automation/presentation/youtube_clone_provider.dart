@@ -4,7 +4,6 @@
 
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar/isar.dart';
 import 'package:veox_flutter/features/automation/services/youtube_clone_service.dart';
 
 class YouTubeCloneState {
