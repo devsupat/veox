@@ -55,6 +55,39 @@ export interface QueueItem {
   status: "idle" | "processing" | "done" | "error";
 }
 
+export interface ReelTemplate {
+  id: string;
+  name: string;
+  color: number;
+  image: string;
+  createdAt: string;
+}
+
+export interface ReelProject {
+  id: string;
+  createdAt: string;
+  templateId: string;
+  templateName: string;
+  topic: string;
+  character: string;
+  topicMode: 'single' | 'perLine';
+  reelsCount: number;
+  storiesPerHint: number;
+  scenesCount: number;
+  videoVoiceEnabled: boolean;
+  voiceLanguage: string;
+  externalDubbingEnabled: boolean;
+  status: 'draft' | 'queued' | 'generated';
+  generatedAt?: string;
+}
+
+export interface ReelsState {
+  templates: ReelTemplate[];
+  projects: ReelProject[];
+  selectedTemplateId: string;
+  activeProjectId: string | null;
+}
+
 export type TabId =
   | "home"
   | "character"

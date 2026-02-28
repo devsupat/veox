@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import SplashScreen from "@/components/veox/SplashScreen";
@@ -31,7 +31,9 @@ function ComingSoon({ label }: { label: string }) {
 
 export default function Index() {
   const [showSplash, setShowSplash] = useState(true);
-  const [activeTab, setActiveTab] = useLocalStorage<TabId>("veox-tab", "home");
+  const app = useAppState();
+
+  const [activeTab, setActiveTab] = useLocalStorage<TabId>("veox-tab", app.activeProject ? "home" : "projects");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statusCollapsed, setStatusCollapsed] = useState(false);
 
@@ -39,8 +41,6 @@ export default function Index() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [showPasteModal, setShowPasteModal] = useState(false);
-
-  const app = useAppState();
 
   const handleSplashComplete = useCallback(() => setShowSplash(false), []);
 
@@ -80,6 +80,13 @@ export default function Index() {
     app.loadProject(id);
     setActiveTab("home");
   }, [app, setActiveTab]);
+
+  useEffect(() => {
+    // If no active project, default to projects dashboard
+    if (!app.state.activeProjectId && activeTab === 'home') {
+      setActiveTab('projects');
+    }
+  }, [app.state.activeProjectId, activeTab, setActiveTab]);
 
   if (showSplash) {
     return <SplashScreen onComplete={handleSplashComplete} />;
