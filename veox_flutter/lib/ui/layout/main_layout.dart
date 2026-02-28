@@ -8,8 +8,10 @@ import 'package:veox_flutter/ui/pages/reels_tab.dart';
 import 'package:veox_flutter/ui/pages/projects_tab.dart';
 import 'package:veox_flutter/ui/pages/ai_voice_tab.dart';
 import 'package:veox_flutter/ui/pages/settings_tab.dart';
+import 'package:veox_flutter/ui/pages/mastering_tab.dart';
 import 'package:veox_flutter/features/story/presentation/character_studio_tab.dart';
 import 'package:veox_flutter/features/story/presentation/scene_builder/scene_builder_tab.dart';
+import 'package:veox_flutter/ui/pages/clone_tab.dart';
 import 'package:veox_flutter/ui/widgets/create_project_dialog.dart';
 import 'package:veox_flutter/ui/widgets/paste_prompts_dialog.dart';
 
@@ -73,6 +75,12 @@ class _MainLayoutState extends State<MainLayout> {
       case 'home':
         content = const HomeTab();
         break;
+      case 'clone':
+        content = const CloneTab();
+        break;
+      case 'mastering':
+        content = const MasteringTab();
+        break;
       case 'reels':
         content = const ReelsTab();
         break;
@@ -109,31 +117,35 @@ class _MainLayoutState extends State<MainLayout> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left Sidebar (Navigator)
-                _buildLeftSidebar(context, appState),
+                // Left Sidebar (Navigator) - Hide for clone and mastering tab
+                if (_activeTab != 'clone' && _activeTab != 'mastering')
+                  _buildLeftSidebar(context, appState),
 
                 // Content
                 Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
-                          blurRadius: 10,
+                  child: (_activeTab == 'clone' || _activeTab == 'mastering')
+                      ? content // Full width/height for immersive tabs
+                      : Container(
+                          margin: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.02),
+                                blurRadius: 10,
+                              ),
+                            ],
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: content,
                         ),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: content,
-                  ),
                 ),
 
-                // Right Sidebar (Status)
-                _buildRightSidebar(context, appState),
+                // Right Sidebar (Status) - Hide for clone and mastering tab
+                if (_activeTab != 'clone' && _activeTab != 'mastering')
+                  _buildRightSidebar(context, appState),
               ],
             ),
           ),

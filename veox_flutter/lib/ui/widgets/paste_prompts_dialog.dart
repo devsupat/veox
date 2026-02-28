@@ -55,43 +55,24 @@ class _PastePromptsDialogState extends State<PastePromptsDialog> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.blue.shade200, width: 1.5),
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.white,
-                    ),
-                    child: TextField(
-                      controller: _controller,
-                      maxLines: null,
-                      expands: true,
-                      style: const TextStyle(fontSize: 14),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.all(16),
-                        hintText: "Paste JSON (auto-extracts [...]) or plain text (one prompt per line)",
-                        hintStyle: TextStyle(color: Colors.grey),
-                      ),
-                    ),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.blue.shade200, width: 1.5),
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                ),
+                child: TextField(
+                  controller: _controller,
+                  maxLines: null,
+                  expands: true,
+                  style: const TextStyle(fontSize: 14),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(16),
+                    hintText: "Paste JSON (auto-extracts [...]) or plain text (one prompt per line)",
+                    hintStyle: TextStyle(color: Colors.grey),
                   ),
-                  if (_controller.text.isEmpty)
-                    Positioned(
-                      top: 40,
-                      left: 40,
-                      child: IgnorePointer(
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.orange, width: 4),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               ),
             ),
             const SizedBox(height: 16),

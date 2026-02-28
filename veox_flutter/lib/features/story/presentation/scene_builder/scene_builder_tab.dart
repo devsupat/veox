@@ -12,123 +12,349 @@ class SceneBuilderTab extends ConsumerStatefulWidget {
 }
 
 class _SceneBuilderTabState extends ConsumerState<SceneBuilderTab> {
-  // We don't need a controller for "story input" in the new design.
-  // The scenes are generated from the "Create Story" tab (previous step).
-  // But for now, let's assume we just display the generated scenes in a grid.
+  final TextEditingController _storyJsonController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(sceneBuilderProvider);
     final scenes = state.scenes;
 
-    return Column(
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 1. Top Bar (Stats & Actions)
+        // 1. Left Panel (Story JSON & Controls)
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          width: 320,
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+            border: Border(right: BorderSide(color: Colors.grey.shade200)),
           ),
-          child: Row(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Stats
-              _buildStatItem("Total", "${scenes.length}", Colors.blue),
-              const SizedBox(width: 24),
-              _buildStatItem("Generate", "${scenes.length}", Colors.orange),
-              const SizedBox(width: 24),
-              _buildStatItem("Reruns", "0", Colors.green),
-              const SizedBox(width: 24),
-              _buildStatItem("Done", "0", Colors.purple),
-
-              const Spacer(),
-
-              // Toggles
-              _buildToggle("Skip Mode", true),
-              const SizedBox(width: 16),
-              _buildToggle("Paired Ref", false),
-              const SizedBox(width: 16),
-              
-              // Actions
-              TextButton.icon(
-                onPressed: () {},
-                icon: const Icon(LucideIcons.folderOpen, size: 16),
-                label: const Text("Open Output Folder"),
-                style: TextButton.styleFrom(foregroundColor: Colors.purple),
+              // Tabs
+              Row(
+                children: [
+                  _buildTab("Controls", true),
+                  _buildTab("Chars", false),
+                ],
               ),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(LucideIcons.trash2, size: 18, color: Colors.red),
+              const SizedBox(height: 16),
+              
+              // Story JSON Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("<> Story JSON", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  TextButton(
+                    onPressed: () => _storyJsonController.clear(),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text("Clear", style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // JSON Input Area
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: TextField(
+                    controller: _storyJsonController,
+                    maxLines: null,
+                    expands: true,
+                    style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+                    decoration: const InputDecoration(
+                      hintText: "Paste JSON...",
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.all(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981), // Green
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      child: const Text("Parse", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B5CF6), // Purple
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      child: const Text("Analyze & Detect Characters", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Whisk Cookie
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade200),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Whisk Cookie", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Text("•••••••••••", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 2)),
+                        const Spacer(),
+                        ElevatedButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(LucideIcons.chrome, size: 14),
+                          label: const Text("Connect Browser"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF3B82F6),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            textStyle: const TextStyle(fontSize: 11),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.checkSquare, size: 12, color: Colors.green),
+                        const SizedBox(width: 4),
+                        Text("23h 46m remaining", style: TextStyle(fontSize: 10, color: Colors.green.shade700)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Ultrafast Scene Generator
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF), // Light Indigo
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE0E7FF)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(LucideIcons.zap, size: 16, color: Colors.indigo),
+                        SizedBox(width: 8),
+                        Text("Ultrafast Scene Generator", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text("No ref image upload • Model rotation • Batch processing", style: TextStyle(fontSize: 10, color: Colors.indigo.shade300)),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Text("Batch Size: ", style: TextStyle(fontSize: 14, color: Colors.black54)),
+                        Container(
+                          width: 60,
+                          height: 32,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text("5", style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(LucideIcons.folderOpen, size: 14),
+                        label: const Text("Load Existing Images"),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF4B5563),
+                          side: const BorderSide(color: Color(0xFF9CA3AF)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(LucideIcons.zap, size: 14),
+                        label: const Text("Generate 22 Images"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4F46E5), // Indigo 600
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
 
-        // 2. Main Action Bar
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.all(16),
-          child: ElevatedButton.icon(
-            onPressed: () {
-               ref.read(sceneBuilderProvider.notifier).renderAllScenes();
-               ScaffoldMessenger.of(context).showSnackBar(
-                 const SnackBar(content: Text('Scenes added to Render Queue')),
-               );
-            },
-            icon: const Icon(LucideIcons.clapperboard, size: 18),
-            label: const Text("Generate All Scenes with Characters"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981), // Green
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
+        // 2. Right Panel (Scene Grid)
+        Expanded(
+          child: Column(
+            children: [
+              // Top Stats Bar
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: Row(
+                  children: [
+                    _buildStatItem("Total", "${scenes.length}", Colors.blue),
+                    const SizedBox(width: 24),
+                    _buildStatItem("Generate", "${scenes.length}", Colors.orange),
+                    const SizedBox(width: 24),
+                    _buildStatItem("Reuse", "0", Colors.green),
+                    const SizedBox(width: 24),
+                    _buildStatItem("Done", "0", Colors.purple),
+                    
+                    const SizedBox(width: 32),
+                    _buildToggle("Skip Mode", true, Colors.purple),
+                    const SizedBox(width: 16),
+                    _buildToggle("Paired Ref", false, Colors.grey),
+
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(LucideIcons.folderOpen, size: 14),
+                      label: const Text("Open Output Folder"),
+                      style: TextButton.styleFrom(foregroundColor: const Color(0xFF4F46E5)),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(LucideIcons.trash2, size: 14),
+                      label: const Text("Clear All Images"),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Green Action Bar
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.all(16),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                     ref.read(sceneBuilderProvider.notifier).renderAllScenes();
+                     ScaffoldMessenger.of(context).showSnackBar(
+                       const SnackBar(content: Text('Scenes added to Render Queue')),
+                     );
+                  },
+                  icon: const Icon(LucideIcons.clapperboard, size: 18),
+                  label: const Text("Generate All Scenes with Characters"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981), // Green
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+
+              // Grid
+              Expanded(
+                child: Container(
+                  color: const Color(0xFFF8FAFC), // Slate 50
+                  child: scenes.isEmpty
+                      ? _buildEmptyState()
+                      : GridView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2, // 2 columns like screenshot
+                            childAspectRatio: 1.1, // Adjusted for card content
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
+                          itemCount: scenes.length,
+                          itemBuilder: (context, index) {
+                            return _buildSceneCard(index, scenes[index]);
+                          },
+                        ),
+                ),
+              ),
+            ],
           ),
         ),
-
-        // 3. Scene Grid
-        Expanded(
-          child: scenes.isEmpty
-              ? _buildEmptyState()
-              : GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, // 3 columns like screenshot
-                    childAspectRatio: 0.85, // Taller cards for image + text
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  itemCount: scenes.length,
-                  itemBuilder: (context, index) {
-                    return _buildSceneCard(index, scenes[index]);
-                  },
-                ),
-        ),
       ],
+    );
+  }
+
+  Widget _buildTab(String label, bool isActive) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: isActive ? const Color(0xFF10B981) : Colors.transparent, width: 2)),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isActive ? const Color(0xFF10B981) : Colors.grey,
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildStatItem(String label, String value, Color color) {
     return Column(
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-        ),
+        Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+        Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
       ],
     );
   }
 
-  Widget _buildToggle(String label, bool value) {
+  Widget _buildToggle(String label, bool value, Color activeColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -138,7 +364,7 @@ class _SceneBuilderTabState extends ConsumerState<SceneBuilderTab> {
       child: Row(
         children: [
           Icon(value ? LucideIcons.toggleRight : LucideIcons.toggleLeft, 
-               color: value ? Colors.purple : Colors.grey, size: 20),
+               color: value ? activeColor : Colors.grey, size: 20),
           const SizedBox(width: 8),
           Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
         ],
@@ -157,7 +383,6 @@ class _SceneBuilderTabState extends ConsumerState<SceneBuilderTab> {
           const SizedBox(height: 8),
           TextButton(
              onPressed: () {
-               // Mock generation for demo if empty
                ref.read(sceneBuilderProvider.notifier).generateScenesFromStory(
                  "A futuristic city skyline at night.\n\nA robot walking down the street."
                );
@@ -189,17 +414,17 @@ class _SceneBuilderTabState extends ConsumerState<SceneBuilderTab> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.purple.shade50,
+                    color: const Color(0xFF4F46E5), // Indigo
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     "#${(index + 1).toString().padLeft(3, '0')}",
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.purple.shade700),
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                 ),
-                const Icon(LucideIcons.minusCircle, size: 16, color: Colors.orange),
+                const Icon(LucideIcons.plusCircle, size: 16, color: Colors.orange),
               ],
             ),
           ),
@@ -211,10 +436,9 @@ class _SceneBuilderTabState extends ConsumerState<SceneBuilderTab> {
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade100),
               ),
               child: const Center(
-                child: Icon(LucideIcons.image, size: 32, color: Colors.grey),
+                child: Icon(LucideIcons.image, size: 48, color: Colors.grey),
               ),
             ),
           ),
@@ -226,10 +450,9 @@ class _SceneBuilderTabState extends ConsumerState<SceneBuilderTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  height: 60, // Fixed height for text area
+                  height: 60,
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
@@ -248,10 +471,11 @@ class _SceneBuilderTabState extends ConsumerState<SceneBuilderTab> {
                     icon: const Icon(LucideIcons.refreshCw, size: 12),
                     label: const Text("Generate"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple,
+                      backgroundColor: const Color(0xFF4F46E5), // Indigo
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 0),
                       visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
                 ),
