@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar/isar.dart';
 import 'package:veox_flutter/core/database/isar_service.dart';
 import 'package:veox_flutter/features/ai_voice_music/data/elevenlabs_client.dart';
 import 'package:veox_flutter/features/ai_voice_music/domain/tts_service.dart';

@@ -9,6 +9,7 @@
 
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar/isar.dart';
 import 'package:veox_flutter/core/database/isar_service.dart';
 import 'package:veox_flutter/core/database/task_model.dart';
 import 'package:veox_flutter/features/queue/domain/queue_service.dart';

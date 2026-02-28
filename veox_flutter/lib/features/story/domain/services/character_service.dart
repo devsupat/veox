@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+import 'package:isar/isar.dart';
 import 'package:veox_flutter/core/database/isar_service.dart';
 import 'package:veox_flutter/core/errors/failures.dart';
 import 'package:veox_flutter/core/storage/secure_storage_service.dart';

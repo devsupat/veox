@@ -11,13 +11,14 @@
 
 import 'dart:async';
 import 'dart:io';
-
+import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veox_flutter/core/database/isar_service.dart';
 import 'package:veox_flutter/core/errors/failures.dart';
 import 'package:veox_flutter/core/process/process_runner.dart';
 import 'package:veox_flutter/core/utils/logger.dart';
+import 'package:veox_flutter/features/story/data/project_model.dart';
 import 'package:veox_flutter/features/video_mastering/domain/ffmpeg_command_builder.dart';
 
 // ---------------------------------------------------------------------------

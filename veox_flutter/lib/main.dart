@@ -15,6 +15,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar/isar.dart';
 import 'package:provider/provider.dart' as p;
 import 'package:veox_flutter/core/database/isar_service.dart';
 import 'package:veox_flutter/core/database/task_model.dart';
