@@ -413,7 +413,7 @@ class _MainLayoutState extends State<MainLayout> {
   Widget _buildTerminalDrawer(BuildContext context, AppState appState) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      height: _terminalExpanded ? MediaQuery.of(context).size.height * 0.3 : 32,
+      height: _terminalExpanded ? MediaQuery.of(context).size.height * 0.3 : 33,
       decoration: BoxDecoration(
         color: const Color(0xFF09090B), // Zinc 950
         border: Border(top: BorderSide(color: Colors.grey.shade800)),

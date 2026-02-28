@@ -187,7 +187,7 @@ class _CharacterStudioTabState extends ConsumerState<CharacterStudioTab> {
                        child: ElevatedButton.icon(
                          onPressed: null, // Disabled state
                          icon: const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey)),
-                         label: const Text("Generating...", style: TextStyle(color: Colors.grey)),
+                         label: Text(state.isDetecting ? "Detecting..." : "Detect Characters", overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey)),
                          style: ElevatedButton.styleFrom(
                            backgroundColor: Colors.grey.shade200,
                            foregroundColor: Colors.grey,

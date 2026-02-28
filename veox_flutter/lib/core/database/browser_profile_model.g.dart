@@ -18,23 +18,38 @@ const BrowserProfileModelSchema = CollectionSchema(
   name: r'BrowserProfileModel',
   id: -8103795997896669691,
   properties: {
-    r'lastUsed': PropertySchema(
+    r'accountEmail': PropertySchema(
       id: 0,
+      name: r'accountEmail',
+      type: IsarType.string,
+    ),
+    r'cookiesJson': PropertySchema(
+      id: 1,
+      name: r'cookiesJson',
+      type: IsarType.string,
+    ),
+    r'lastUsed': PropertySchema(
+      id: 2,
       name: r'lastUsed',
       type: IsarType.dateTime,
     ),
     r'name': PropertySchema(
-      id: 1,
+      id: 3,
       name: r'name',
       type: IsarType.string,
     ),
     r'platform': PropertySchema(
-      id: 2,
+      id: 4,
       name: r'platform',
       type: IsarType.string,
     ),
+    r'sessionState': PropertySchema(
+      id: 5,
+      name: r'sessionState',
+      type: IsarType.string,
+    ),
     r'userDataDir': PropertySchema(
-      id: 3,
+      id: 6,
       name: r'userDataDir',
       type: IsarType.string,
     )
@@ -73,8 +88,26 @@ int _browserProfileModelEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.accountEmail;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.cookiesJson;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.platform.length * 3;
+  {
+    final value = object.sessionState;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.userDataDir.length * 3;
   return bytesCount;
 }
@@ -85,10 +118,13 @@ void _browserProfileModelSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.lastUsed);
-  writer.writeString(offsets[1], object.name);
-  writer.writeString(offsets[2], object.platform);
-  writer.writeString(offsets[3], object.userDataDir);
+  writer.writeString(offsets[0], object.accountEmail);
+  writer.writeString(offsets[1], object.cookiesJson);
+  writer.writeDateTime(offsets[2], object.lastUsed);
+  writer.writeString(offsets[3], object.name);
+  writer.writeString(offsets[4], object.platform);
+  writer.writeString(offsets[5], object.sessionState);
+  writer.writeString(offsets[6], object.userDataDir);
 }
 
 BrowserProfileModel _browserProfileModelDeserialize(
@@ -98,11 +134,14 @@ BrowserProfileModel _browserProfileModelDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = BrowserProfileModel();
+  object.accountEmail = reader.readStringOrNull(offsets[0]);
+  object.cookiesJson = reader.readStringOrNull(offsets[1]);
   object.id = id;
-  object.lastUsed = reader.readDateTimeOrNull(offsets[0]);
-  object.name = reader.readString(offsets[1]);
-  object.platform = reader.readString(offsets[2]);
-  object.userDataDir = reader.readString(offsets[3]);
+  object.lastUsed = reader.readDateTimeOrNull(offsets[2]);
+  object.name = reader.readString(offsets[3]);
+  object.platform = reader.readString(offsets[4]);
+  object.sessionState = reader.readStringOrNull(offsets[5]);
+  object.userDataDir = reader.readString(offsets[6]);
   return object;
 }
 
@@ -114,12 +153,18 @@ P _browserProfileModelDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
+      return (reader.readString(offset)) as P;
+    case 5:
+      return (reader.readStringOrNull(offset)) as P;
+    case 6:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -322,6 +367,314 @@ extension BrowserProfileModelQueryWhere
 
 extension BrowserProfileModelQueryFilter on QueryBuilder<BrowserProfileModel,
     BrowserProfileModel, QFilterCondition> {
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      accountEmailIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'accountEmail',
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      accountEmailIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'accountEmail',
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      accountEmailEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'accountEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      accountEmailGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'accountEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      accountEmailLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'accountEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      accountEmailBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'accountEmail',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      accountEmailStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'accountEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      accountEmailEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'accountEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      accountEmailContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'accountEmail',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      accountEmailMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'accountEmail',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      accountEmailIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'accountEmail',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      accountEmailIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'accountEmail',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      cookiesJsonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'cookiesJson',
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      cookiesJsonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'cookiesJson',
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      cookiesJsonEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cookiesJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      cookiesJsonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'cookiesJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      cookiesJsonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'cookiesJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      cookiesJsonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'cookiesJson',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      cookiesJsonStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'cookiesJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      cookiesJsonEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'cookiesJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      cookiesJsonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'cookiesJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      cookiesJsonMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'cookiesJson',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      cookiesJsonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cookiesJson',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      cookiesJsonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'cookiesJson',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
       idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -725,6 +1078,160 @@ extension BrowserProfileModelQueryFilter on QueryBuilder<BrowserProfileModel,
   }
 
   QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      sessionStateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'sessionState',
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      sessionStateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'sessionState',
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      sessionStateEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sessionState',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      sessionStateGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sessionState',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      sessionStateLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sessionState',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      sessionStateBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sessionState',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      sessionStateStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'sessionState',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      sessionStateEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'sessionState',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      sessionStateContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'sessionState',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      sessionStateMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'sessionState',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      sessionStateIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sessionState',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      sessionStateIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'sessionState',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
       userDataDirEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -870,6 +1377,34 @@ extension BrowserProfileModelQueryLinks on QueryBuilder<BrowserProfileModel,
 extension BrowserProfileModelQuerySortBy
     on QueryBuilder<BrowserProfileModel, BrowserProfileModel, QSortBy> {
   QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
+      sortByAccountEmail() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accountEmail', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
+      sortByAccountEmailDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accountEmail', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
+      sortByCookiesJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cookiesJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
+      sortByCookiesJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cookiesJson', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
       sortByLastUsed() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUsed', Sort.asc);
@@ -912,6 +1447,20 @@ extension BrowserProfileModelQuerySortBy
   }
 
   QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
+      sortBySessionState() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sessionState', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
+      sortBySessionStateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sessionState', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
       sortByUserDataDir() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'userDataDir', Sort.asc);
@@ -928,6 +1477,34 @@ extension BrowserProfileModelQuerySortBy
 
 extension BrowserProfileModelQuerySortThenBy
     on QueryBuilder<BrowserProfileModel, BrowserProfileModel, QSortThenBy> {
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
+      thenByAccountEmail() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accountEmail', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
+      thenByAccountEmailDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accountEmail', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
+      thenByCookiesJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cookiesJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
+      thenByCookiesJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cookiesJson', Sort.desc);
+    });
+  }
+
   QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
       thenById() {
     return QueryBuilder.apply(this, (query) {
@@ -985,6 +1562,20 @@ extension BrowserProfileModelQuerySortThenBy
   }
 
   QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
+      thenBySessionState() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sessionState', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
+      thenBySessionStateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sessionState', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
       thenByUserDataDir() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'userDataDir', Sort.asc);
@@ -1001,6 +1592,20 @@ extension BrowserProfileModelQuerySortThenBy
 
 extension BrowserProfileModelQueryWhereDistinct
     on QueryBuilder<BrowserProfileModel, BrowserProfileModel, QDistinct> {
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QDistinct>
+      distinctByAccountEmail({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'accountEmail', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QDistinct>
+      distinctByCookiesJson({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'cookiesJson', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<BrowserProfileModel, BrowserProfileModel, QDistinct>
       distinctByLastUsed() {
     return QueryBuilder.apply(this, (query) {
@@ -1023,6 +1628,13 @@ extension BrowserProfileModelQueryWhereDistinct
   }
 
   QueryBuilder<BrowserProfileModel, BrowserProfileModel, QDistinct>
+      distinctBySessionState({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sessionState', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QDistinct>
       distinctByUserDataDir({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'userDataDir', caseSensitive: caseSensitive);
@@ -1035,6 +1647,20 @@ extension BrowserProfileModelQueryProperty
   QueryBuilder<BrowserProfileModel, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, String?, QQueryOperations>
+      accountEmailProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'accountEmail');
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, String?, QQueryOperations>
+      cookiesJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'cookiesJson');
     });
   }
 
@@ -1055,6 +1681,13 @@ extension BrowserProfileModelQueryProperty
       platformProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'platform');
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, String?, QQueryOperations>
+      sessionStateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sessionState');
     });
   }
 

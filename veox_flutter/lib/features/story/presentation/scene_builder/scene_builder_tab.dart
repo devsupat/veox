@@ -238,40 +238,44 @@ class _SceneBuilderTabState extends ConsumerState<SceneBuilderTab> {
             children: [
               // Top Stats Bar
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
                 ),
-                child: Row(
-                  children: [
-                    _buildStatItem("Total", "${scenes.length}", Colors.blue),
-                    const SizedBox(width: 24),
-                    _buildStatItem("Generate", "${scenes.length}", Colors.orange),
-                    const SizedBox(width: 24),
-                    _buildStatItem("Reuse", "0", Colors.green),
-                    const SizedBox(width: 24),
-                    _buildStatItem("Done", "0", Colors.purple),
-                    
-                    const SizedBox(width: 32),
-                    _buildToggle("Skip Mode", true, Colors.purple),
-                    const SizedBox(width: 16),
-                    _buildToggle("Paired Ref", false, Colors.grey),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildStatItem("Total", "${scenes.length}", Colors.blue),
+                      const SizedBox(width: 24),
+                      _buildStatItem("Generate", "${scenes.length}", Colors.orange),
+                      const SizedBox(width: 24),
+                      _buildStatItem("Reuse", "0", Colors.green),
+                      const SizedBox(width: 24),
+                      _buildStatItem("Done", "0", Colors.purple),
+                      
+                      const SizedBox(width: 32),
+                      _buildToggle("Skip Mode", true, Colors.purple),
+                      const SizedBox(width: 16),
+                      _buildToggle("Paired Ref", false, Colors.grey),
 
-                    const Spacer(),
-                    TextButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(LucideIcons.folderOpen, size: 14),
-                      label: const Text("Open Output Folder"),
-                      style: TextButton.styleFrom(foregroundColor: const Color(0xFF4F46E5)),
-                    ),
-                    TextButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(LucideIcons.trash2, size: 14),
-                      label: const Text("Clear All Images"),
-                      style: TextButton.styleFrom(foregroundColor: Colors.red),
-                    ),
-                  ],
+                      const SizedBox(width: 32),
+                      TextButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(LucideIcons.folderOpen, size: 14),
+                        label: const Text("Open Output Folder"),
+                        style: TextButton.styleFrom(foregroundColor: const Color(0xFF4F46E5)),
+                      ),
+                      TextButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(LucideIcons.trash2, size: 14),
+                        label: const Text("Clear All Images"),
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
