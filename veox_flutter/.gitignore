@@ -43,3 +43,17 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Node & Automation & Playwright
+node_modules/
+dist/
+.local-chrome/
+puppeteer/
+**/.local-chrome/
+**/.cache/ms-playwright/
+**/ms-playwright/
+**/playwright/.cache/
+
+# Flutter builds
+build/
+.dart_tool/
