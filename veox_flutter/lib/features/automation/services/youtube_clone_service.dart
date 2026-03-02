@@ -21,7 +21,15 @@ import 'package:veox_flutter/features/story/data/llm_client.dart';
 // Progress model
 // ---------------------------------------------------------------------------
 
-enum CloneStep { idle, fetchingInfo, fetchingTranscript, analyzing, saving, done, failed }
+enum CloneStep {
+  idle,
+  fetchingInfo,
+  fetchingTranscript,
+  analyzing,
+  saving,
+  done,
+  failed,
+}
 
 class CloneProgress {
   const CloneProgress({required this.step, this.message, this.prompts});
@@ -38,36 +46,37 @@ class YouTubeCloneService {
   YouTubeCloneService._();
   static final YouTubeCloneService instance = YouTubeCloneService._();
 
-//   ]
-// }
-//
-// Rules:
-// - 3 to 20 segments (don't over-segment short videos).
-// - Each visual_prompt should be self-contained and evocative.
-// - No text outside the JSON.
-// ''';
+  //   ]
+  // }
+  //
+  // Rules:
+  // - 3 to 20 segments (don't over-segment short videos).
+  // - Each visual_prompt should be self-contained and evocative.
+  // - No text outside the JSON.
+  // ''';
 
   /// Returns a Stream<CloneProgress> that emits updates as each stage completes.
   Stream<CloneProgress> cloneVideo(String url) async* {
     AppLogger.info('Starting YouTube clone for: $url', tag: 'YTClone');
 
     yield const CloneProgress(
-        step: CloneStep.fetchingInfo, message: 'Fetching video info…');
+      step: CloneStep.fetchingInfo,
+      message: 'Fetching video info…',
+    );
 
     VideoInfo info;
     try {
       info = await YtDlpClient.instance.getVideoInfo(url);
     } catch (e) {
-      yield CloneProgress(
-          step: CloneStep.failed,
-          message: _friendlyError(e));
+      yield CloneProgress(step: CloneStep.failed, message: _friendlyError(e));
       return;
     }
 
     AppLogger.info('"${info.title}" by ${info.uploader}', tag: 'YTClone');
     yield CloneProgress(
-        step: CloneStep.fetchingTranscript,
-        message: 'Downloading transcript for "${info.title}"…');
+      step: CloneStep.fetchingTranscript,
+      message: 'Downloading transcript for "${info.title}"…',
+    );
 
     String transcript;
     try {
@@ -79,8 +88,9 @@ class YouTubeCloneService {
 
     AppLogger.info('Transcript: ${transcript.length} chars', tag: 'YTClone');
     yield const CloneProgress(
-        step: CloneStep.analyzing,
-        message: 'Analysing script with AI…');
+      step: CloneStep.analyzing,
+      message: 'Analysing script with AI…',
+    );
 
     List<String> prompts;
     try {
@@ -90,7 +100,10 @@ class YouTubeCloneService {
       return;
     }
 
-    yield const CloneProgress(step: CloneStep.saving, message: 'Saving prompts…');
+    yield const CloneProgress(
+      step: CloneStep.saving,
+      message: 'Saving prompts…',
+    );
     try {
       await _saveToIsar(prompts, sourceUrl: url, videoTitle: info.title);
     } catch (e) {
@@ -131,12 +144,19 @@ class YouTubeCloneService {
       final data = jsonDecode(jsonStr) as Map<String, dynamic>;
       final segments = data['segments'] as List<dynamic>? ?? [];
       return segments
-          .map((s) => (s as Map<String, dynamic>)['visual_prompt'] as String? ?? '')
+          .map(
+            (s) =>
+                (s as Map<String, dynamic>)['visual_prompt'] as String? ?? '',
+          )
           .where((p) => p.isNotEmpty)
           .toList();
     } catch (e) {
       // If JSON fails, try treating it as newline-separated prompts
-      final lines = raw.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+      final lines = raw
+          .split('\n')
+          .map((l) => l.trim())
+          .where((l) => l.isNotEmpty)
+          .toList();
       if (lines.isNotEmpty) return lines;
       throw ParseFailure('Could not parse LLM response: $e');
     }
@@ -150,25 +170,38 @@ class YouTubeCloneService {
     required String videoTitle,
   }) async {
     final isar = await IsarService().db;
-    final tasks = prompts.asMap().map((idx, prompt) {
-      final task = TaskModel()
-        ..taskId = '${videoTitle.hashCode}_$idx'
-        ..type = 'video_gen'
-        ..status = 'pending'
-        ..priority = 5
-        ..createdAt = DateTime.now()
-        ..retryCount = 0
-        ..payloadJson = jsonEncode({
-          'prompt': prompt,
-          'source': sourceUrl,
-          'index': idx + 1,
-          'platform': 'veo3',
-        });
-      return MapEntry(idx, task);
-    }).values.toList();
+    final tasks = prompts
+        .asMap()
+        .map((idx, prompt) {
+          final task = TaskModel()
+            ..taskId =
+                'veo_${videoTitle.hashCode}_${DateTime.now().millisecondsSinceEpoch}_$idx'
+            ..type = 'video_gen'
+            ..status = 'pending'
+            ..priority =
+                10 // High priority for manual clones
+            ..createdAt = DateTime.now()
+            ..retryCount = 0
+            ..payloadJson = jsonEncode({
+              'prompt': prompt,
+              'source': sourceUrl,
+              'index': idx + 1,
+              'platform': 'veo',
+              'action': 'generate',
+            });
+          return MapEntry(idx, task);
+        })
+        .values
+        .toList();
 
-    await isar.writeTxn(() async => isar.taskModels.putAll(tasks));
-    AppLogger.info('Saved ${prompts.length} tasks to queue.', tag: 'YTClone');
+    await isar.writeTxn(() async {
+      await isar.taskModels.putAll(tasks);
+    });
+
+    AppLogger.info(
+      'Queued ${prompts.length} automation tasks for sequencer.',
+      tag: 'YTClone',
+    );
   }
 
   // ── Error Mapping ─────────────────────────────────────────────────────────

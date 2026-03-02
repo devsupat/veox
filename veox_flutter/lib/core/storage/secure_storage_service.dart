@@ -26,7 +26,7 @@ enum ApiProvider {
         ApiProvider.suno => 'Suno',
       };
 
-  String get _storageKey => 'veox_api_key_${name}';
+  String get _storageKey => 'veox_api_key_$name';
 
   /// Expected key prefix for format validation.
   String? get keyPrefix => switch (this) {

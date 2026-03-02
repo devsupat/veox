@@ -1,190 +1,262 @@
-import 'dart:io';
-import 'package:puppeteer/puppeteer.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:veox_flutter/core/utils/logger.dart';
+import 'package:veox_flutter/core/errors/failures.dart';
+import 'package:veox_flutter/core/database/isar_service.dart';
 import '../models/automation_state.dart';
+import 'automation_bridge_service.dart';
+import 'settings_service.dart';
+import 'credential_service.dart';
 
-/// Service responsible for managing the Puppeteer browser instance
-/// and executing video generation commands on Google Labs (VideoFX).
+/// Service responsible for orchestrating Veo automation workflows.
+/// Follows SOLID principles by delegating low-level process management to [AutomationBridgeService].
+final veoAutomationProvider =
+    StateNotifierProvider<VeoAutomationService, AutomationState>((ref) {
+      final bridge = ref.watch(automationBridgeProvider);
+      final settings = ref.watch(settingsServiceProvider);
+      final credentials = ref.watch(credentialServiceProvider);
+      final isar = IsarService(); // Singleton
+      return VeoAutomationService(bridge, settings, credentials, isar);
+    });
+
 class VeoAutomationService extends StateNotifier<AutomationState> {
-  Browser? _browser;
-  Page? _page;
-  
-  // Configurable selectors - in a real app these might come from remote config
-  final SelectorConfig _selectors = const SelectorConfig();
+  final AutomationBridgeService _bridge;
+  final SettingsService _settings;
+  final CredentialService _credentials;
+  final IsarService _isar;
 
-  VeoAutomationService() : super(const AutomationState());
+  VeoAutomationService(
+    this._bridge,
+    this._settings,
+    this._credentials,
+    this._isar,
+  ) : super(const AutomationState()) {
+    _initListeners();
+  }
 
-  /// Launches a persistent browser session.
-  /// Uses app support directory to store user data (cookies/login session).
-  Future<void> launchBrowser({bool headless = false}) async {
-    try {
-      state = state.copyWith(status: AutomationStatus.connecting, currentAction: "Launching Browser...");
-      
-      final appDir = await getApplicationSupportDirectory();
-      final userDataDir = Directory('${appDir.path}/veox_browser_data');
-      if (!userDataDir.existsSync()) {
-        userDataDir.createSync(recursive: true);
+  Timer? _heartbeatTimer;
+
+  void _initListeners() {
+    _bridge.logs.listen((log) {
+      final message = log['message'] ?? '';
+      final level = log['level'] ?? 'info';
+
+      switch (level) {
+        case 'error':
+          AppLogger.error(message, tag: "NodeEngine");
+          break;
+        case 'warn':
+          AppLogger.warn(message, tag: "NodeEngine");
+          break;
+        default:
+          AppLogger.info(message, tag: "NodeEngine");
       }
 
-      // Launch Puppeteer with persistent context
-      _browser = await puppeteer.launch(
-        headless: headless,
-        userDataDir: userDataDir.path,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--window-size=1280,800',
-        ],
-      );
-
-      // Open a new page or get the existing one
-      final pages = await _browser!.pages;
-      _page = pages.isNotEmpty ? pages.first : await _browser!.newPage();
-      
-      // Navigate to Google Labs VideoFX (or relevant URL)
-      // Note: Using a placeholder URL as the actual VideoFX URL might change
-      await _page!.goto('https://labs.google/videofx', wait: Until.networkIdle);
-
-      state = state.copyWith(
-        status: AutomationStatus.connected,
-        isBrowserOpen: true,
-        currentAction: "Browser Ready. Please Login manually if needed.",
-      );
-      
-      // Monitor browser disconnect
-      _browser!.disconnected.then((_) {
-        _browser = null;
-        _page = null;
+      // Reactive state updates based on engine feedback
+      if (message.contains("Login sequence successful")) {
         state = state.copyWith(
-          status: AutomationStatus.idle,
-          isBrowserOpen: false,
-          currentAction: "Browser Closed",
+          currentAction: "Authenticated. Navigating to Veos...",
         );
+      }
+    });
+
+    // Monitor for unexpected process termination
+    _startHeartbeat();
+  }
+
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 10), (
+      timer,
+    ) async {
+      if (state.isBrowserOpen && state.status != AutomationStatus.busy) {
+        try {
+          // Sending a no-op or screenshot check to ensure process is alive
+          await _bridge.sendCommand('browser.screenshot', {});
+        } catch (e) {
+          AppLogger.warn(
+            "Heartbeat failed: $e. Triggering recovery...",
+            tag: "VeoAutomation",
+          );
+          _handleRecovery();
+        }
+      }
+    });
+  }
+
+  Future<void> _handleRecovery() async {
+    state = state.copyWith(isBrowserOpen: false, status: AutomationStatus.idle);
+    await launchBrowser();
+  }
+
+  /// Launches the automation engine and browser.
+  Future<void> launchBrowser() async {
+    if (state.isBrowserOpen) {
+      AppLogger.info("Browser already open", tag: "VeoAutomation");
+      return;
+    }
+
+    try {
+      state = state.copyWith(
+        status: AutomationStatus.busy,
+        currentAction: "Launching Browser...",
+      );
+
+      final profileName = await _settings.getProfileName();
+      await _bridge.startEngine();
+
+      await _bridge.sendCommand('browser.launch', {
+        'profileId': profileName,
+        'headless':
+            false, // Visible for transparency during development/debugging
       });
 
-    } catch (e, stack) {
       state = state.copyWith(
-        status: AutomationStatus.error,
-        lastError: "Failed to launch browser: $e",
-        currentAction: "Error Launching",
+        status: AutomationStatus.connected,
+        currentAction: "Browser Ready",
+        isBrowserOpen: true,
       );
-      print("VeoAutomationService Error: $e\n$stack");
+    } catch (e) {
+      _handleError("Launch Failed", e);
     }
   }
 
-  /// Closes the browser instance.
-  Future<void> closeBrowser() async {
-    if (_browser != null) {
-      await _browser!.close();
-      _browser = null;
-      _page = null;
-      state = state.copyWith(status: AutomationStatus.idle, isBrowserOpen: false);
-    }
-  }
-
-  /// Automates the generation process on the page.
-  /// 
-  /// 1. Finds the prompt textarea.
-  /// 2. Clears existing text.
-  /// 3. Types the new prompt.
-  /// 4. Clicks Generate.
-  /// 5. Waits for generation (simplified).
-  Future<void> generateVideo(String prompt) async {
-    if (_browser == null || _page == null) {
-      throw Exception("Browser not connected. Call launchBrowser() first.");
+  /// Orchestrates a full Veo action sequence: Launching -> Login -> Action.
+  /// If [email] or [password] are null, it attempts to fetch them from secure storage
+  /// based on the current profile in [SettingsService].
+  Future<void> executeVeoAction({
+    String? email,
+    String? password,
+    String? profileName,
+    required String action,
+    String? prompt,
+  }) async {
+    if (state.status == AutomationStatus.busy) {
+      AppLogger.warn("Automation is currently busy", tag: "VeoAutomation");
+      return;
     }
 
     try {
-      state = state.copyWith(status: AutomationStatus.busy, currentAction: "Inputting Prompt...");
-
-      // 1. Focus and Type Prompt
-      // Using a generic selector strategy - try multiple common textarea selectors if specific one fails
-      // In production, use more robust selectors (e.g. accessibility labels)
-      final promptInput = await _findPromptInput();
-      if (promptInput == null) {
-        throw Exception("Could not find prompt input field. Please check selectors.");
-      }
-
-      // Clear input (Select All + Backspace is often safer than .value = '')
-      await promptInput.click();
-      await _page!.keyboard.down(Key.meta); // Command on Mac
-      await _page!.keyboard.press(Key.keyA);
-      await _page!.keyboard.up(Key.meta);
-      await _page!.keyboard.press(Key.backspace);
-
-      // Type new prompt
-      await _page!.keyboard.type(prompt);
-      await Future.delayed(const Duration(milliseconds: 500)); // Human-like delay
-
-      // 2. Click Generate
-      state = state.copyWith(currentAction: "Clicking Generate...");
-      final generateBtn = await _findGenerateButton();
-      if (generateBtn == null) {
-        throw Exception("Could not find Generate button.");
-      }
-      await generateBtn.click();
-
-      // 3. Wait for Generation (Mock implementation for waiting logic)
-      // Real implementation would look for a loading spinner to disappear or a video element to appear
-      state = state.copyWith(currentAction: "Waiting for Video Generation...");
-      
-      // Just a simple delay for now as we don't have the real site DOM to check against
-      await Future.delayed(const Duration(seconds: 10)); 
-
       state = state.copyWith(
-        status: AutomationStatus.connected,
-        currentAction: "Generation Command Sent",
-        framesGenerated: state.framesGenerated + 1,
+        status: AutomationStatus.busy,
+        currentAction: "Initializing Sequence...",
+        lastError: null,
       );
 
+      // 1. Resolve Credentials
+      final targetProfile = profileName ?? await _settings.getProfileName();
+      final profileModel = await _isar.getBrowserProfileByName(targetProfile);
+
+      // Load the linked google account if it exists
+      if (profileModel != null && !profileModel.googleAccount.isLoaded) {
+        await profileModel.googleAccount.load();
+      }
+
+      final effectiveEmail = email ?? profileModel?.googleAccount.value?.email;
+      final effectivePassword =
+          password ?? await _credentials.getPassword(targetProfile);
+
+      if (effectiveEmail == null || effectivePassword == null) {
+        throw AuthFailure(
+          "Missing credentials for profile: $targetProfile. Please configure in settings.",
+        );
+      }
+
+      // 2. Ensure Environment
+      if (!state.isBrowserOpen) {
+        await launchBrowser();
+      }
+
+      // 3. Authentication Flow
+      state = state.copyWith(currentAction: "Ensuring Authentication...");
+      await _bridge.sendCommand('veo.login', {
+        'email': effectiveEmail,
+        'password': effectivePassword,
+      });
+
+      // 4. Workflow Execution
+      if (action == 'generate') {
+        if (prompt == null)
+          throw ArgumentError("Prompt is required for 'generate' action.");
+
+        state = state.copyWith(currentAction: "Sending Generation Prompt...");
+        final result = await _bridge.sendCommand('veo.generate', {
+          'prompt': prompt,
+        });
+
+        AppLogger.info(
+          "Prompt accepted by engine: ${result['result']}",
+          tag: "VeoAutomation",
+        );
+
+        state = state.copyWith(
+          status: AutomationStatus.connected,
+          currentAction: "Task Submitted Successfully",
+        );
+      } else if (action == 'auth_guided') {
+        state = state.copyWith(
+          currentAction: "Waiting for User Authentication...",
+        );
+        await _bridge.sendCommand('veo.auth_guided', {});
+
+        state = state.copyWith(
+          status: AutomationStatus.connected,
+          currentAction: "Authentication Verified",
+        );
+      } else {
+        throw UnimplementedError("Action '$action' is not supported yet.");
+      }
     } catch (e) {
-      state = state.copyWith(
-        status: AutomationStatus.error,
-        lastError: "Generation Failed: $e",
-        currentAction: "Error during generation",
-      );
+      _handleError("Automation Sequence Failed", e);
       rethrow;
     }
   }
 
-  // --- Helper Methods for Selectors ---
-
-  Future<ElementHandle?> _findPromptInput() async {
-    // Try multiple selectors
-    final candidates = [
-      _selectors.promptInput,
-      'textarea',
-      'input[type="text"]',
-      '[contenteditable="true"]',
-    ];
-
-    for (final selector in candidates) {
-      try {
-        final element = await _page!.$(selector);
-        if (element != null) return element;
-      } catch (_) {}
+  /// Gracefully shuts down the browser and engine.
+  Future<void> closeBrowser() async {
+    try {
+      await _bridge.sendCommand('browser.close');
+      await _bridge.stopEngine();
+      state = state.copyWith(
+        status: AutomationStatus.idle,
+        isBrowserOpen: false,
+        currentAction: "Session Terminated",
+      );
+    } catch (e) {
+      AppLogger.error("Failed to close browser: $e", tag: "VeoAutomation");
     }
-    return null;
   }
 
-  Future<ElementHandle?> _findGenerateButton() async {
-    // Try explicit selector first
-    try {
-      final btn = await _page!.$(_selectors.generateButton); // Puppeteer Dart might not support :has-text directly in $
-      if (btn != null) return btn;
-    } catch (_) {}
+  void _handleError(String context, dynamic error) {
+    AppLogger.error("$context: $error", tag: "VeoAutomation");
 
-    // Fallback: iterate buttons and check text
-    final buttons = await _page!.$$('button');
-    for (final btn in buttons) {
-      // Use evaluate to get innerText directly from the DOM element
-      final text = await btn.evaluate('el => el.innerText');
-      if (text != null && (text.toString().toLowerCase().contains('generate') || 
-          text.toString().toLowerCase().contains('create'))) {
-        return btn;
-      }
+    // Classify error
+    final isRetryable = _isErrorRetryable(error);
+
+    state = state.copyWith(
+      status: AutomationStatus.error,
+      lastError: error.toString(),
+      currentAction: isRetryable ? "$context (Retryable)" : context,
+    );
+
+    if (!isRetryable) {
+      // Potentially close browser on fatal errors to reset state
+      // closeBrowser();
     }
-    return null;
+  }
+
+  @override
+  void dispose() {
+    _heartbeatTimer?.cancel();
+    super.dispose();
+  }
+
+  bool _isErrorRetryable(dynamic error) {
+    if (error is AuthFailure) return false;
+    final message = error.toString().toLowerCase();
+    if (message.contains("timeout")) return true;
+    if (message.contains("network")) return true;
+    if (message.contains("navigation failed")) return true;
+    return false;
   }
 }

@@ -18,38 +18,33 @@ const BrowserProfileModelSchema = CollectionSchema(
   name: r'BrowserProfileModel',
   id: -8103795997896669691,
   properties: {
-    r'accountEmail': PropertySchema(
-      id: 0,
-      name: r'accountEmail',
-      type: IsarType.string,
-    ),
     r'cookiesJson': PropertySchema(
-      id: 1,
+      id: 0,
       name: r'cookiesJson',
       type: IsarType.string,
     ),
     r'lastUsed': PropertySchema(
-      id: 2,
+      id: 1,
       name: r'lastUsed',
       type: IsarType.dateTime,
     ),
     r'name': PropertySchema(
-      id: 3,
+      id: 2,
       name: r'name',
       type: IsarType.string,
     ),
     r'platform': PropertySchema(
-      id: 4,
+      id: 3,
       name: r'platform',
       type: IsarType.string,
     ),
     r'sessionState': PropertySchema(
-      id: 5,
+      id: 4,
       name: r'sessionState',
       type: IsarType.string,
     ),
     r'userDataDir': PropertySchema(
-      id: 6,
+      id: 5,
       name: r'userDataDir',
       type: IsarType.string,
     )
@@ -74,7 +69,14 @@ const BrowserProfileModelSchema = CollectionSchema(
       ],
     )
   },
-  links: {},
+  links: {
+    r'googleAccount': LinkSchema(
+      id: 6302418318429302898,
+      name: r'googleAccount',
+      target: r'GoogleAccountModel',
+      single: true,
+    )
+  },
   embeddedSchemas: {},
   getId: _browserProfileModelGetId,
   getLinks: _browserProfileModelGetLinks,
@@ -88,12 +90,6 @@ int _browserProfileModelEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
-  {
-    final value = object.accountEmail;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
   {
     final value = object.cookiesJson;
     if (value != null) {
@@ -118,13 +114,12 @@ void _browserProfileModelSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.accountEmail);
-  writer.writeString(offsets[1], object.cookiesJson);
-  writer.writeDateTime(offsets[2], object.lastUsed);
-  writer.writeString(offsets[3], object.name);
-  writer.writeString(offsets[4], object.platform);
-  writer.writeString(offsets[5], object.sessionState);
-  writer.writeString(offsets[6], object.userDataDir);
+  writer.writeString(offsets[0], object.cookiesJson);
+  writer.writeDateTime(offsets[1], object.lastUsed);
+  writer.writeString(offsets[2], object.name);
+  writer.writeString(offsets[3], object.platform);
+  writer.writeString(offsets[4], object.sessionState);
+  writer.writeString(offsets[5], object.userDataDir);
 }
 
 BrowserProfileModel _browserProfileModelDeserialize(
@@ -134,14 +129,13 @@ BrowserProfileModel _browserProfileModelDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = BrowserProfileModel();
-  object.accountEmail = reader.readStringOrNull(offsets[0]);
-  object.cookiesJson = reader.readStringOrNull(offsets[1]);
+  object.cookiesJson = reader.readStringOrNull(offsets[0]);
   object.id = id;
-  object.lastUsed = reader.readDateTimeOrNull(offsets[2]);
-  object.name = reader.readString(offsets[3]);
-  object.platform = reader.readString(offsets[4]);
-  object.sessionState = reader.readStringOrNull(offsets[5]);
-  object.userDataDir = reader.readString(offsets[6]);
+  object.lastUsed = reader.readDateTimeOrNull(offsets[1]);
+  object.name = reader.readString(offsets[2]);
+  object.platform = reader.readString(offsets[3]);
+  object.sessionState = reader.readStringOrNull(offsets[4]);
+  object.userDataDir = reader.readString(offsets[5]);
   return object;
 }
 
@@ -155,16 +149,14 @@ P _browserProfileModelDeserializeProp<P>(
     case 0:
       return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readStringOrNull(offset)) as P;
-    case 2:
       return (reader.readDateTimeOrNull(offset)) as P;
+    case 2:
+      return (reader.readString(offset)) as P;
     case 3:
       return (reader.readString(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
-    case 5:
       return (reader.readStringOrNull(offset)) as P;
-    case 6:
+    case 5:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -177,12 +169,14 @@ Id _browserProfileModelGetId(BrowserProfileModel object) {
 
 List<IsarLinkBase<dynamic>> _browserProfileModelGetLinks(
     BrowserProfileModel object) {
-  return [];
+  return [object.googleAccount];
 }
 
 void _browserProfileModelAttach(
     IsarCollection<dynamic> col, Id id, BrowserProfileModel object) {
   object.id = id;
+  object.googleAccount.attach(
+      col, col.isar.collection<GoogleAccountModel>(), r'googleAccount', id);
 }
 
 extension BrowserProfileModelByIndex on IsarCollection<BrowserProfileModel> {
@@ -367,160 +361,6 @@ extension BrowserProfileModelQueryWhere
 
 extension BrowserProfileModelQueryFilter on QueryBuilder<BrowserProfileModel,
     BrowserProfileModel, QFilterCondition> {
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
-      accountEmailIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'accountEmail',
-      ));
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
-      accountEmailIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'accountEmail',
-      ));
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
-      accountEmailEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'accountEmail',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
-      accountEmailGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'accountEmail',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
-      accountEmailLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'accountEmail',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
-      accountEmailBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'accountEmail',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
-      accountEmailStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'accountEmail',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
-      accountEmailEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'accountEmail',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
-      accountEmailContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'accountEmail',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
-      accountEmailMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'accountEmail',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
-      accountEmailIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'accountEmail',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
-      accountEmailIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'accountEmail',
-        value: '',
-      ));
-    });
-  }
-
   QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
       cookiesJsonIsNull() {
     return QueryBuilder.apply(this, (query) {
@@ -1372,24 +1212,24 @@ extension BrowserProfileModelQueryObject on QueryBuilder<BrowserProfileModel,
     BrowserProfileModel, QFilterCondition> {}
 
 extension BrowserProfileModelQueryLinks on QueryBuilder<BrowserProfileModel,
-    BrowserProfileModel, QFilterCondition> {}
+    BrowserProfileModel, QFilterCondition> {
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      googleAccount(FilterQuery<GoogleAccountModel> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.link(q, r'googleAccount');
+    });
+  }
+
+  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterFilterCondition>
+      googleAccountIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'googleAccount', 0, true, 0, true);
+    });
+  }
+}
 
 extension BrowserProfileModelQuerySortBy
     on QueryBuilder<BrowserProfileModel, BrowserProfileModel, QSortBy> {
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
-      sortByAccountEmail() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'accountEmail', Sort.asc);
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
-      sortByAccountEmailDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'accountEmail', Sort.desc);
-    });
-  }
-
   QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
       sortByCookiesJson() {
     return QueryBuilder.apply(this, (query) {
@@ -1477,20 +1317,6 @@ extension BrowserProfileModelQuerySortBy
 
 extension BrowserProfileModelQuerySortThenBy
     on QueryBuilder<BrowserProfileModel, BrowserProfileModel, QSortThenBy> {
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
-      thenByAccountEmail() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'accountEmail', Sort.asc);
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
-      thenByAccountEmailDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'accountEmail', Sort.desc);
-    });
-  }
-
   QueryBuilder<BrowserProfileModel, BrowserProfileModel, QAfterSortBy>
       thenByCookiesJson() {
     return QueryBuilder.apply(this, (query) {
@@ -1593,13 +1419,6 @@ extension BrowserProfileModelQuerySortThenBy
 extension BrowserProfileModelQueryWhereDistinct
     on QueryBuilder<BrowserProfileModel, BrowserProfileModel, QDistinct> {
   QueryBuilder<BrowserProfileModel, BrowserProfileModel, QDistinct>
-      distinctByAccountEmail({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'accountEmail', caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, BrowserProfileModel, QDistinct>
       distinctByCookiesJson({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'cookiesJson', caseSensitive: caseSensitive);
@@ -1647,13 +1466,6 @@ extension BrowserProfileModelQueryProperty
   QueryBuilder<BrowserProfileModel, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
-    });
-  }
-
-  QueryBuilder<BrowserProfileModel, String?, QQueryOperations>
-      accountEmailProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'accountEmail');
     });
   }
 

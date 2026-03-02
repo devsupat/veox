@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'google_account_model.dart';
 
 part 'browser_profile_model.g.dart';
 
@@ -13,7 +14,8 @@ class BrowserProfileModel {
   late String platform; // 'veo', 'gemini'
 
   // Account & Security Management
-  String? accountEmail; // Google Account email
+  final googleAccount = IsarLink<GoogleAccountModel>();
+
   String? cookiesJson; // Session cookies for persistence
   String? sessionState; // e.g., 'Whisk' state or other session data
 

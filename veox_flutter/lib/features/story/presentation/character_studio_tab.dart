@@ -14,9 +14,9 @@ class CharacterStudioTab extends ConsumerStatefulWidget {
 class _CharacterStudioTabState extends ConsumerState<CharacterStudioTab> {
   final TextEditingController _storyController = TextEditingController();
   bool _useTemplate = true;
-  String _selectedConsistency = "CHARACTER & ENTITY CONSISTE...";
-  String _selectedModel = "GEMINI 3 LATEST";
-  int _promptCount = 10;
+  final String _selectedConsistency = "CHARACTER & ENTITY CONSISTE...";
+  final String _selectedModel = "GEMINI 3 LATEST";
+  final int _promptCount = 10;
   bool _jsonOutput = true;
 
   // Mock loading state

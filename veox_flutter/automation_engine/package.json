@@ -1,0 +1,14 @@
+{
+  "name": "veox-automation-engine",
+  "version": "1.0.0",
+  "description": "Headless browser automation engine for VEOX",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "playwright": "^1.41.0",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  }
+}

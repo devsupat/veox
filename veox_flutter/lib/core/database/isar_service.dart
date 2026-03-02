@@ -1,8 +1,12 @@
 import 'package:isar/isar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veox_flutter/core/database/task_model.dart';
 import 'package:veox_flutter/core/database/browser_profile_model.dart';
+import 'package:veox_flutter/core/database/google_account_model.dart';
 import 'package:veox_flutter/features/story/data/project_model.dart';
 import 'package:path_provider/path_provider.dart';
+
+final isarServiceProvider = Provider((ref) => IsarService());
 
 class IsarService {
   static final IsarService _instance = IsarService._internal();
@@ -23,6 +27,7 @@ class IsarService {
         [
           TaskModelSchema,
           BrowserProfileModelSchema,
+          GoogleAccountModelSchema,
           ProjectModelSchema,
           CharacterModelSchema,
           SceneModelSchema,
@@ -35,61 +40,77 @@ class IsarService {
   }
 
   // --- Implementasi CRUD Proyek ---
+  // ... (keep existing project CRUD)
 
-  /// Create or Update Project
-  Future<void> saveProject(ProjectModel project) async {
-    try {
-      final isar = await db;
-      await isar.writeTxn(() async {
-        await isar.collection<ProjectModel>().put(project);
-      });
-    } catch (e) {
-      // Sederhana error handling
-      // debugPrint('Error saving project: $e');
-      rethrow;
-    }
+  // --- Implementasi CRUD BrowserProfile ---
+
+  Future<void> saveBrowserProfile(BrowserProfileModel profile) async {
+    final isar = await db;
+    await isar.writeTxn(() async {
+      await isar.collection<BrowserProfileModel>().put(profile);
+    });
   }
 
-  /// Read all Projects
-  Future<List<ProjectModel>> getAllProjects() async {
-    try {
-      final isar = await db;
-      return await isar.collection<ProjectModel>().where().findAll();
-    } catch (e) {
-      // debugPrint('Error getting all projects: $e');
-      return [];
-    }
+  Future<List<BrowserProfileModel>> getAllBrowserProfiles() async {
+    final isar = await db;
+    return await isar.collection<BrowserProfileModel>().where().findAll();
   }
 
-  /// Delete Project by ID (Note: Isar uses int ID natively, but UUID is String)
-  Future<void> deleteProject(String uuid) async {
-    try {
-      final isar = await db;
-      await isar.writeTxn(() async {
-        await isar
-            .collection<ProjectModel>()
-            .filter()
-            .projectIdEqualTo(uuid)
-            .deleteAll();
-      });
-    } catch (e) {
-      // debugPrint('Error deleting project: $e');
-      rethrow;
-    }
+  Future<BrowserProfileModel?> getBrowserProfileByName(String name) async {
+    final isar = await db;
+    return await isar
+        .collection<BrowserProfileModel>()
+        .filter()
+        .nameEqualTo(name)
+        .findFirst();
   }
 
-  /// Get specific Project by UUID (using generated filter extension)
-  Future<ProjectModel?> getProjectById(String uuid) async {
-    try {
-      final isar = await db;
-      return await isar
-          .collection<ProjectModel>()
-          .filter()
-          .projectIdEqualTo(uuid)
-          .findFirst();
-    } catch (e) {
-      // debugPrint('Error getting project by id: $e');
-      return null;
-    }
+  // --- Implementasi CRUD GoogleAccount ---
+
+  Future<void> saveGoogleAccount(GoogleAccountModel account) async {
+    final isar = await db;
+    await isar.writeTxn(() async {
+      await isar.collection<GoogleAccountModel>().put(account);
+    });
+  }
+
+  Stream<List<GoogleAccountModel>> watchGoogleAccounts() async* {
+    final isar = await db;
+    yield* isar.collection<GoogleAccountModel>().where().watch(
+      fireImmediately: true,
+    );
+  }
+
+  Future<void> deleteGoogleAccount(int id) async {
+    final isar = await db;
+    await isar.writeTxn(() async {
+      await isar.collection<GoogleAccountModel>().delete(id);
+    });
+  }
+
+  // --- Implementasi CRUD SceneModel ---
+
+  Future<void> saveScene(SceneModel scene) async {
+    final isar = await db;
+    await isar.writeTxn(() async {
+      await isar.collection<SceneModel>().put(scene);
+    });
+  }
+
+  Future<List<SceneModel>> getAllScenes() async {
+    final isar = await db;
+    return await isar.collection<SceneModel>().where().findAll();
+  }
+
+  Stream<List<SceneModel>> watchScenes() async* {
+    final isar = await db;
+    yield* isar.collection<SceneModel>().where().watch(fireImmediately: true);
+  }
+
+  Future<void> deleteScene(int id) async {
+    final isar = await db;
+    await isar.writeTxn(() async {
+      await isar.collection<SceneModel>().delete(id);
+    });
   }
 }

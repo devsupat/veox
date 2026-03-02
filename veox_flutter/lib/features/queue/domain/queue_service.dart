@@ -11,7 +11,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:uuid/uuid.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:veox_flutter/core/database/isar_service.dart';
 import 'package:veox_flutter/core/database/task_model.dart';

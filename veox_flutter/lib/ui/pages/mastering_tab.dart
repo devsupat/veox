@@ -9,8 +9,8 @@ class MasteringTab extends StatefulWidget {
 }
 
 class _MasteringTabState extends State<MasteringTab> {
-  String _bgMusicPrompt = "Upbeat synthwave with driving bassline";
-  
+  final String _bgMusicPrompt = "Upbeat synthwave with driving bassline";
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -27,14 +27,23 @@ class _MasteringTabState extends State<MasteringTab> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  border: Border(right: BorderSide(color: Colors.grey.shade200)),
+                  border: Border(
+                    right: BorderSide(color: Colors.grey.shade200),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Media", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue)),
+                    const Text(
+                      "Media",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.blue,
+                      ),
+                    ),
                     const SizedBox(height: 12),
-                    
+
                     // Media Buttons Grid
                     GridView.count(
                       crossAxisCount: 2,
@@ -45,25 +54,46 @@ class _MasteringTabState extends State<MasteringTab> {
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
                         _buildMediaBtn("Video", LucideIcons.video, Colors.blue),
-                        _buildMediaBtn("Audio", LucideIcons.music, Colors.green),
+                        _buildMediaBtn(
+                          "Audio",
+                          LucideIcons.music,
+                          Colors.green,
+                        ),
                         _buildMediaBtn("Image", LucideIcons.image, Colors.teal),
                         _buildMediaBtn("Text", LucideIcons.type, Colors.orange),
-                        _buildMediaBtn("Intro", LucideIcons.playCircle, Colors.amber),
+                        _buildMediaBtn(
+                          "Intro",
+                          LucideIcons.playCircle,
+                          Colors.amber,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
 
                     // BG Music Generator
-                    const Text("BG Music Generator", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.blue)),
+                    const Text(
+                      "BG Music Generator",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Colors.blue,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(color: Colors.grey.shade300),
                       ),
-                      child: const Text("Upbeat electronic music with driving bass", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      child: const Text(
+                        "Upbeat electronic music with driving bass",
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     SizedBox(
@@ -75,7 +105,9 @@ class _MasteringTabState extends State<MasteringTab> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.purple,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                       ),
                     ),
@@ -89,13 +121,22 @@ class _MasteringTabState extends State<MasteringTab> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                       ),
                     ),
 
                     const SizedBox(height: 24),
-                    const Text("Voice Audio Generator", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.blue)),
+                    const Text(
+                      "Voice Audio Generator",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Colors.blue,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     SizedBox(
                       width: double.infinity,
@@ -106,7 +147,9 @@ class _MasteringTabState extends State<MasteringTab> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.teal,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                       ),
                     ),
@@ -130,20 +173,41 @@ class _MasteringTabState extends State<MasteringTab> {
                               width: double.infinity,
                               color: Colors.blue,
                               padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: const Text("Defeits", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                              child: const Text(
+                                "Defeits",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 8),
-                            _buildVerticalTool("Text", LucideIcons.arrowRight, Colors.blue),
+                            _buildVerticalTool(
+                              "Text",
+                              LucideIcons.arrowRight,
+                              Colors.blue,
+                            ),
                             const SizedBox(height: 8),
                             _buildVerticalTool("Intro", null, Colors.blue),
                             const SizedBox(height: 8),
-                            _buildVerticalTool("Outro", LucideIcons.video, Colors.purple),
+                            _buildVerticalTool(
+                              "Outro",
+                              LucideIcons.video,
+                              Colors.purple,
+                            ),
                             const SizedBox(height: 8),
-                            _buildVerticalTool("Tatto", null, Colors.grey, label2: "OFF 0.2"),
+                            _buildVerticalTool(
+                              "Tatto",
+                              null,
+                              Colors.grey,
+                              label2: "OFF 0.2",
+                            ),
                           ],
                         ),
                       ),
-                      
+
                       // Video Player Area
                       Expanded(
                         child: Column(
@@ -155,9 +219,18 @@ class _MasteringTabState extends State<MasteringTab> {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(LucideIcons.clapperboard, size: 64, color: Colors.grey.shade700),
+                                      Icon(
+                                        LucideIcons.clapperboard,
+                                        size: 64,
+                                        color: Colors.grey.shade700,
+                                      ),
                                       const SizedBox(height: 16),
-                                      Text("Import videos to get started", style: TextStyle(color: Colors.grey.shade600)),
+                                      Text(
+                                        "Import videos to get started",
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -167,26 +240,52 @@ class _MasteringTabState extends State<MasteringTab> {
                             Container(
                               height: 48,
                               color: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: Row(
                                 children: [
-                                  const Text("00:00:00", style: TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                                  const Text(
+                                    "00:00:00",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
                                   const SizedBox(width: 16),
                                   const Icon(LucideIcons.skipBack, size: 16),
                                   const SizedBox(width: 16),
-                                  const Icon(LucideIcons.playCircle, size: 24, color: Colors.green),
+                                  const Icon(
+                                    LucideIcons.playCircle,
+                                    size: 24,
+                                    color: Colors.green,
+                                  ),
                                   const SizedBox(width: 16),
                                   const Icon(LucideIcons.skipForward, size: 16),
                                   const SizedBox(width: 16),
-                                  const Icon(LucideIcons.trash2, size: 16, color: Colors.red),
+                                  const Icon(
+                                    LucideIcons.trash2,
+                                    size: 16,
+                                    color: Colors.red,
+                                  ),
                                   const Spacer(),
                                   const Icon(LucideIcons.volume2, size: 16),
                                   const SizedBox(width: 8),
                                   Container(
                                     width: 80,
                                     height: 4,
-                                    decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
-                                    child: Align(alignment: Alignment.centerLeft, child: Container(width: 40, height: 4, color: Colors.blue)),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade300,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Container(
+                                        width: 40,
+                                        height: 4,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -228,24 +327,47 @@ class _MasteringTabState extends State<MasteringTab> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                ElevatedButton.icon(
-                                  onPressed: () {},
-                                  icon: const Icon(LucideIcons.play, size: 12),
-                                  label: const Text("Start"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF3B82F6),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                                    visualDensity: VisualDensity.compact,
+                                Tooltip(
+                                  message:
+                                      "Mastering features are coming in Phase 3.",
+                                  child: ElevatedButton.icon(
+                                    onPressed: null,
+                                    icon: const Icon(
+                                      LucideIcons.play,
+                                      size: 12,
+                                    ),
+                                    label: const Text("Start"),
+                                    style: ElevatedButton.styleFrom(
+                                      disabledBackgroundColor:
+                                          Colors.blue.shade100,
+                                      disabledForegroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                      ),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
                                   ),
                                 ),
                                 const Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    Text("All Music", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-                                    Text("Ready", style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
+                                    Text(
+                                      "All Music",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                    Text(
+                                      "Ready",
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.orange,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ],
-                                )
+                                ),
                               ],
                             ),
                             const SizedBox(height: 16),
@@ -255,13 +377,20 @@ class _MasteringTabState extends State<MasteringTab> {
                               width: double.infinity,
                               child: ElevatedButton.icon(
                                 onPressed: () {},
-                                icon: const Icon(LucideIcons.bookOpen, size: 16),
+                                icon: const Icon(
+                                  LucideIcons.bookOpen,
+                                  size: 16,
+                                ),
                                 label: const Text("Generate from Story Prompt"),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.orange,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
                                 ),
                               ),
                             ),
@@ -275,21 +404,34 @@ class _MasteringTabState extends State<MasteringTab> {
                                   onPressed: () {},
                                   icon: const Icon(LucideIcons.code, size: 14),
                                   label: const Text("Paste JSON"),
-                                  style: TextButton.styleFrom(foregroundColor: Colors.blue),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.blue,
+                                  ),
                                 ),
                                 const SizedBox(width: 16),
                                 TextButton.icon(
                                   onPressed: () {},
-                                  icon: const Icon(LucideIcons.upload, size: 14),
+                                  icon: const Icon(
+                                    LucideIcons.upload,
+                                    size: 14,
+                                  ),
                                   label: const Text("Import JSON"),
-                                  style: TextButton.styleFrom(foregroundColor: Colors.purple),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.purple,
+                                  ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 16),
 
                             // Manual Prompt
-                            const Text("Or configure manually", style: TextStyle(fontSize: 11, color: Colors.grey)),
+                            const Text(
+                              "Or configure manually",
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             Container(
                               padding: const EdgeInsets.all(12),
@@ -300,16 +442,29 @@ class _MasteringTabState extends State<MasteringTab> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text("Manual Prompt", style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                  const Text(
+                                    "Manual Prompt",
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      const Icon(LucideIcons.pencil, size: 14, color: Colors.grey),
+                                      const Icon(
+                                        LucideIcons.pencil,
+                                        size: 14,
+                                        color: Colors.grey,
+                                      ),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
                                           _bgMusicPrompt,
-                                          style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w500),
+                                          style: const TextStyle(
+                                            color: Colors.blue,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -325,9 +480,9 @@ class _MasteringTabState extends State<MasteringTab> {
                             _buildSlider("Density: 0.5", 0.5),
                             const SizedBox(height: 16),
                             _buildSlider("Bright: 0.5", 0.5),
-                            
+
                             const SizedBox(height: 24),
-                            
+
                             // Record Button
                             Center(
                               child: ElevatedButton.icon(
@@ -337,8 +492,13 @@ class _MasteringTabState extends State<MasteringTab> {
                                 style: ElevatedButton.styleFrom(
                                   disabledBackgroundColor: Colors.grey.shade200,
                                   disabledForegroundColor: Colors.grey,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
                                 ),
                               ),
                             ),
@@ -371,19 +531,41 @@ class _MasteringTabState extends State<MasteringTab> {
                   children: [
                     const Icon(LucideIcons.menu, color: Colors.white, size: 16),
                     const SizedBox(width: 16),
-                    const Text("Ripple Fill", style: TextStyle(color: Colors.white, fontSize: 12)),
+                    const Text(
+                      "Ripple Fill",
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
                     const SizedBox(width: 16),
-                    const Icon(LucideIcons.arrowLeft, color: Colors.white, size: 16),
+                    const Icon(
+                      LucideIcons.arrowLeft,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                     const Spacer(),
-                    const Icon(LucideIcons.maximize, color: Colors.white, size: 16),
+                    const Icon(
+                      LucideIcons.maximize,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                     const SizedBox(width: 16),
-                    const Icon(LucideIcons.minusCircle, color: Colors.white, size: 16),
+                    const Icon(
+                      LucideIcons.minusCircle,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Container(width: 100, height: 4, color: Colors.grey),
                     const SizedBox(width: 8),
-                    const Icon(LucideIcons.plusCircle, color: Colors.white, size: 16),
+                    const Icon(
+                      LucideIcons.plusCircle,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                     const SizedBox(width: 16),
-                    const Text("100%", style: TextStyle(color: Colors.white, fontSize: 12)),
+                    const Text(
+                      "100%",
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
                   ],
                 ),
               ),
@@ -403,26 +585,55 @@ class _MasteringTabState extends State<MasteringTab> {
                         ],
                       ),
                     ),
-                    
+
                     // Timeline Area
                     Expanded(
                       child: Stack(
                         children: [
                           // Grid Lines
                           Row(
-                            children: List.generate(20, (index) => Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  border: Border(right: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                            children: List.generate(
+                              20,
+                              (index) => Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      right: BorderSide(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.05,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                            )),
+                            ),
                           ),
-                          
+
                           // Time Markers
-                          const Positioned(top: 4, left: 100, child: Text("5s", style: TextStyle(color: Colors.grey, fontSize: 10))),
-                          const Positioned(top: 4, left: 200, child: Text("10s", style: TextStyle(color: Colors.grey, fontSize: 10))),
-                          
+                          const Positioned(
+                            top: 4,
+                            left: 100,
+                            child: Text(
+                              "5s",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          const Positioned(
+                            top: 4,
+                            left: 200,
+                            child: Text(
+                              "10s",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+
                           // Playhead
                           Positioned(
                             left: 40,
@@ -433,7 +644,11 @@ class _MasteringTabState extends State<MasteringTab> {
                           Positioned(
                             left: 35,
                             top: 0,
-                            child: Container(width: 12, height: 12, color: Colors.white),
+                            child: Container(
+                              width: 12,
+                              height: 12,
+                              color: Colors.white,
+                            ),
                           ),
 
                           // Tracks Content
@@ -449,9 +664,19 @@ class _MasteringTabState extends State<MasteringTab> {
                                 padding: const EdgeInsets.only(left: 8),
                                 child: const Row(
                                   children: [
-                                    Icon(LucideIcons.check, size: 12, color: Colors.green),
+                                    Icon(
+                                      LucideIcons.check,
+                                      size: 12,
+                                      color: Colors.green,
+                                    ),
                                     SizedBox(width: 4),
-                                    Text("Audio 0 Clips", style: TextStyle(color: Colors.white, fontSize: 10)),
+                                    Text(
+                                      "Audio 0 Clips",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -481,13 +706,25 @@ class _MasteringTabState extends State<MasteringTab> {
         children: [
           Icon(icon, size: 14, color: Colors.white),
           const SizedBox(width: 8),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildVerticalTool(String label, IconData? icon, Color color, {String? label2}) {
+  Widget _buildVerticalTool(
+    String label,
+    IconData? icon,
+    Color color, {
+    String? label2,
+  }) {
     return Container(
       width: 40,
       height: 40,
@@ -499,8 +736,15 @@ class _MasteringTabState extends State<MasteringTab> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (icon != null) Icon(icon, size: 14, color: Colors.white),
-          if (label2 != null) Text(label2, style: const TextStyle(fontSize: 8, color: Colors.white)),
-          Text(label, style: const TextStyle(fontSize: 10, color: Colors.white)),
+          if (label2 != null)
+            Text(
+              label2,
+              style: const TextStyle(fontSize: 8, color: Colors.white),
+            ),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: Colors.white),
+          ),
         ],
       ),
     );
@@ -511,7 +755,12 @@ class _MasteringTabState extends State<MasteringTab> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: isActive ? Colors.blue : Colors.transparent, width: 2)),
+          border: Border(
+            bottom: BorderSide(
+              color: isActive ? Colors.blue : Colors.transparent,
+              width: 2,
+            ),
+          ),
         ),
         child: Text(
           label,
@@ -532,7 +781,10 @@ class _MasteringTabState extends State<MasteringTab> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+            ),
           ],
         ),
         SizedBox(
@@ -558,9 +810,19 @@ class _MasteringTabState extends State<MasteringTab> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 10)),
+          Text(
+            value,
+            style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 10),
+          ),
         ],
       ),
     );

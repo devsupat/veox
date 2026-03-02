@@ -8,7 +8,6 @@
 // each completed scene as it arrives, rather than waiting for all N.
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:isar/isar.dart';
 import 'package:uuid/uuid.dart';

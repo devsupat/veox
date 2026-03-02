@@ -16,14 +16,13 @@ class ReelsTab extends StatefulWidget {
 class _ReelsTabState extends State<ReelsTab> {
   String? _selectedTemplateId;
   String _topic = "";
-  String _character = "Boy";
-  String _voiceLang = "English";
-  String _mode = "single";
-  int _reelsCount = 1;
-  int _storiesCount = 1;
-  int _scenesCount = 12;
+  final String _character = "Boy";
+  final String _voiceLang = "English";
+  final String _mode = "single";
+  final int _reelsCount = 1;
+  final int _storiesCount = 1;
+  final int _scenesCount = 12;
   bool _voiceCue = true;
-  bool _isGenerating = false;
 
   final TextEditingController _topicController = TextEditingController();
 
@@ -354,18 +353,19 @@ class _ReelsTabState extends State<ReelsTab> {
                     // Generate Button
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isGenerating ? null : _handleGenerate,
-                        icon: const Icon(LucideIcons.clapperboard, size: 16),
-                        label: Text(
-                          _isGenerating ? "Generating..." : "Generate Content",
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6366F1), // Indigo
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      child: Tooltip(
+                        message: "Reels generation is coming in Phase 3.",
+                        child: ElevatedButton.icon(
+                          onPressed: null, // Disabled for Phase 1/2 MVP
+                          icon: const Icon(LucideIcons.clapperboard, size: 16),
+                          label: Text("Generate Content"),
+                          style: ElevatedButton.styleFrom(
+                            disabledBackgroundColor: Colors.indigo.shade100,
+                            disabledForegroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                       ),
@@ -500,13 +500,5 @@ class _ReelsTabState extends State<ReelsTab> {
         ],
       ),
     );
-  }
-
-  void _handleGenerate() {
-    if (_topic.isEmpty) return;
-    setState(() => _isGenerating = true);
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _isGenerating = false);
-    });
   }
 }

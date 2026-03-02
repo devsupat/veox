@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:veox_flutter/features/automation/providers/veo_automation_provider.dart';
+import 'package:veox_flutter/features/automation/services/veo_automation_service.dart';
 import 'package:veox_flutter/features/automation/models/automation_state.dart';
+import 'package:veox_flutter/features/workflows/providers/clone_workflow_provider.dart';
+import 'package:veox_flutter/core/state/workflow_state.dart';
+import 'package:veox_flutter/ui/widgets/glass_container.dart';
+import 'package:veox_flutter/ui/widgets/terminal_drawer.dart';
 
 class CloneTab extends ConsumerStatefulWidget {
   const CloneTab({super.key});
@@ -12,360 +16,599 @@ class CloneTab extends ConsumerStatefulWidget {
 }
 
 class _CloneTabState extends ConsumerState<CloneTab> {
-  final TextEditingController _urlController = TextEditingController(text: "https://www.youtube.com/watch?v=8A41Qka18ko");
-  final TextEditingController _promptController = TextEditingController(text: "A futuristic city with flying cars"); // Mock prompt for now
+  final TextEditingController _urlController = TextEditingController(
+    text: "https://www.youtube.com/watch?v=8A41Qka18ko",
+  );
+  final TextEditingController _promptController = TextEditingController(
+    text: "A futuristic city with flying cars",
+  );
   String _selectedStyle = "No Style";
   String _selectedModel = "Gemini 3 Flash";
   bool _voiceEnabled = false;
   bool _twoInOne = true;
-  String _clips = "5";
 
   @override
   Widget build(BuildContext context) {
     final automationState = ref.watch(veoAutomationProvider);
-    final automationNotifier = ref.read(veoAutomationProvider.notifier);
+    final workflowState = ref.watch(cloneWorkflowProvider);
 
-    return Column(
-      children: [
-        // Header Info
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          color: Colors.white,
-          alignment: Alignment.center,
-          child: const Text(
-            "Frame Sequencer 3 (Human char consistant)",
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          // Background Image with Dark Overlay
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/premium_bg.png',
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        
-        // Main Content (Black Background Area)
-        Expanded(
-          child: Container(
-            color: Colors.black,
-            child: Center(
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 800),
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Logo/Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(LucideIcons.video, color: Colors.green, size: 16),
-                              SizedBox(width: 8),
-                              Text("CineRecreate", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            _buildTopLink("Analyzer"),
-                            const SizedBox(width: 16),
-                            _buildTopLink("Prompt Generator"),
-                            const SizedBox(width: 16),
-                            _buildTopLink("Veo Forge"),
-                            const SizedBox(width: 24),
-                            // Connection Status
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: automationState.status == AutomationStatus.connected 
-                                  ? Colors.green.withValues(alpha: 0.1) 
-                                  : Colors.grey.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: automationState.status == AutomationStatus.connected 
-                                    ? Colors.green 
-                                    : Colors.grey
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    automationState.status == AutomationStatus.connected ? LucideIcons.link : LucideIcons.link2Off, 
-                                    size: 12, 
-                                    color: automationState.status == AutomationStatus.connected ? Colors.green : Colors.grey
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    automationState.status == AutomationStatus.connected ? "Connected" : "Disconnected",
-                                    style: TextStyle(
-                                      color: automationState.status == AutomationStatus.connected ? Colors.green : Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                    const SizedBox(height: 64),
-
-                    // Title
-                    RichText(
-                      text: const TextSpan(
-                        children: [
-                          TextSpan(text: "FRAME ", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
-                          TextSpan(text: "SEQUENCER", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF3B82F6))), // Blue
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      "Deconstruct cinema into a clean visual prompt JSON sequence. Automated subject\ninjection for generation-ready data.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey, height: 1.5),
-                    ),
-                    const SizedBox(height: 48),
-
-                    // Input Form
-                    // 1. URL & Model Row
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: _buildInputContainer(
-                            child: TextField(
-                              controller: _urlController,
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildInputContainer(
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _selectedModel,
-                                dropdownColor: const Color(0xFF1E1E1E),
-                                icon: const Icon(LucideIcons.chevronDown, color: Colors.grey, size: 16),
-                                isExpanded: true,
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
-                                items: ["Gemini 3 Flash", "Gemini 1.5 Pro"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                                onChanged: (v) => setState(() => _selectedModel = v!),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // 2. Settings Row
-                    Row(
-                      children: [
-                        // Style Dropdown
-                        Expanded(
-                          child: _buildInputContainer(
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _selectedStyle,
-                                dropdownColor: const Color(0xFF1E1E1E),
-                                icon: const Icon(LucideIcons.chevronDown, color: Colors.grey, size: 16),
-                                isExpanded: true,
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
-                                items: ["No Style", "Cinematic", "Anime"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                                onChanged: (v) => setState(() => _selectedStyle = v!),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        
-                        // Reference Input
-                        Expanded(
-                          child: _buildInputContainer(
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              child: Row(
-                                children: [
-                                  Icon(LucideIcons.image, size: 14, color: Colors.grey),
-                                  SizedBox(width: 8),
-                                  Text("Reference", style: TextStyle(color: Colors.grey, fontSize: 13)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Clips
-                        Container(
-                          width: 100,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade800),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.only(left: 12),
-                                child: Text("CLIPS", style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-                              ),
-                              Expanded(
-                                child: TextField(
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                                  controller: TextEditingController(text: _clips),
-                                  decoration: const InputDecoration(border: InputBorder.none),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Voice Toggle
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade800),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              Switch(
-                                value: _voiceEnabled, 
-                                onChanged: (v) => setState(() => _voiceEnabled = v),
-                                activeColor: Colors.white,
-                                activeTrackColor: Colors.grey,
-                                inactiveThumbColor: Colors.grey,
-                                inactiveTrackColor: const Color(0xFF1E1E1E),
-                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              const Text("VOICE English", style: TextStyle(color: Colors.grey, fontSize: 11)),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                color: Colors.green.withValues(alpha: 0.2),
-                                child: const Text("2MIN", style: TextStyle(color: Colors.green, fontSize: 8)),
-                              )
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // 2-IN-1 Toggle
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade800),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              const Text("2-IN-1", style: TextStyle(color: Colors.grey, fontSize: 11)),
-                              const SizedBox(width: 8),
-                              Switch(
-                                value: _twoInOne, 
-                                onChanged: (v) => setState(() => _twoInOne = v),
-                                activeColor: Colors.white,
-                                activeTrackColor: const Color(0xFF10B981), // Green
-                                inactiveThumbColor: Colors.grey,
-                                inactiveTrackColor: const Color(0xFF1E1E1E),
-                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Generate Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: automationState.status == AutomationStatus.busy 
-                          ? null 
-                          : () async {
-                              if (automationState.status != AutomationStatus.connected) {
-                                // Connect first
-                                await automationNotifier.launchBrowser();
-                              } else {
-                                // Start Generation
-                                try {
-                                  // Mock prompt extraction from URL (in real app, use youtube api)
-                                  await automationNotifier.generateVideo(_promptController.text);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Video generation started on browser!")),
-                                  );
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-                                  );
-                                }
-                              }
-                          },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: automationState.status == AutomationStatus.connected ? Colors.white : Colors.blue,
-                          foregroundColor: automationState.status == AutomationStatus.connected ? Colors.black : Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: automationState.status == AutomationStatus.connecting || automationState.status == AutomationStatus.busy
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                          : Text(
-                              automationState.status == AutomationStatus.connected 
-                                ? "GENERATE SEQUENCE" 
-                                : "CONNECT BROWSER",
-                              style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
-                            ),
-                      ),
-                    ),
-                    if (automationState.currentAction != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          automationState.currentAction!,
-                          style: const TextStyle(color: Colors.grey, fontSize: 12),
-                        ),
-                      ),
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.5),
+                    Colors.black.withValues(alpha: 0.8),
                   ],
                 ),
               ),
             ),
+          ),
+
+          // Main Content
+          Column(
+            children: [
+              // Header Info
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                color: Colors.black.withValues(alpha: 0.3),
+                alignment: Alignment.center,
+                child: const Text(
+                  "Veox AI Creative Studio — Frame Sequencer 3.0",
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.white54,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+              ),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 48,
+                    horizontal: 24,
+                  ),
+                  child: Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 850),
+                      child: Column(
+                        children: [
+                          // Navigation Bar
+                          _buildPremiumHeader(automationState),
+                          const SizedBox(height: 60),
+
+                          // Hero Section
+                          _buildHeroSection(),
+                          const SizedBox(height: 48),
+
+                          // Glass Interface
+                          AbsorbPointer(
+                            absorbing: workflowState.isRunning,
+                            child: Opacity(
+                              opacity: workflowState.isRunning ? 0.5 : 1.0,
+                              child: GlassContainer(
+                                padding: const EdgeInsets.all(32),
+                                blur: 20,
+                                opacity: 0.08,
+                                child: Column(
+                                  children: [
+                                    _buildInputSection(),
+                                    const SizedBox(height: 24),
+                                    _buildSettingsGrid(),
+                                    const SizedBox(height: 32),
+                                    _buildGenerateButton(
+                                      automationState,
+                                      workflowState,
+                                      context,
+                                    ),
+                                    if (automationState.currentAction != null ||
+                                        workflowState.currentAction != null)
+                                      _buildStatusIndicator(
+                                        workflowState.currentAction ??
+                                            automationState.currentAction!,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 100), // Space for terminal
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Terminal Drawer
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: TerminalDrawer(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumHeader(AutomationState automationState) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        GlassContainer(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          borderRadius: 12,
+          child: Row(
+            children: [
+              const Icon(LucideIcons.video, color: Colors.blueAccent, size: 18),
+              const SizedBox(width: 10),
+              const Text(
+                "CineRecreate",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            _buildNavLink("Analyzer"),
+            const SizedBox(width: 24),
+            _buildNavLink("Forge"),
+            const SizedBox(width: 24),
+            _buildNavLink("Library"),
+            const SizedBox(width: 32),
+            _buildAuthChip(automationState),
+            const SizedBox(width: 16),
+            _buildStatusChip(automationState),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAuthChip(AutomationState state) {
+    // In a real implementation, we'd watch the active profile's auth status
+    final bool isAuthorized = state.status == AutomationStatus.connected;
+
+    return GlassContainer(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      borderRadius: 20,
+      opacity: 0.1,
+      border: Border.all(
+        color: isAuthorized
+            ? Colors.blueAccent.withValues(alpha: 0.3)
+            : Colors.redAccent.withValues(alpha: 0.3),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isAuthorized ? LucideIcons.userCheck : LucideIcons.userX,
+            color: isAuthorized ? Colors.blueAccent : Colors.redAccent,
+            size: 12,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            isAuthorized ? "AUTH ACTIVE" : "AUTH REQUIRED",
+            style: TextStyle(
+              color: isAuthorized ? Colors.blueAccent : Colors.redAccent,
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroSection() {
+    return Column(
+      children: [
+        RichText(
+          textAlign: TextAlign.center,
+          text: const TextSpan(
+            children: [
+              TextSpan(
+                text: "FRAME ",
+                style: TextStyle(
+                  fontSize: 42,
+                  fontWeight: FontWeight.w200,
+                  color: Colors.white,
+                  letterSpacing: 4,
+                ),
+              ),
+              TextSpan(
+                text: "SEQUENCER",
+                style: TextStyle(
+                  fontSize: 42,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.blueAccent,
+                  letterSpacing: 4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          "Automated cinema deconstruction into modular visual prompts.\nHigh-fidelity subject injection and generation orchestration.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white54,
+            height: 1.6,
+            fontWeight: FontWeight.w300,
+            fontSize: 14,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTopLink(String text) {
-    return Text(
-      text,
-      style: const TextStyle(color: Colors.grey, fontSize: 13),
+  Widget _buildInputSection() {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: _buildGlassInput(
+            controller: _urlController,
+            hintText: "Source URL (YouTube, Vimeo...)",
+            icon: LucideIcons.link,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildGlassDropdown(
+            value: _selectedModel,
+            items: ["Gemini 3 Flash", "Gemini 1.5 Pro"],
+            onChanged: (v) => setState(() => _selectedModel = v!),
+            icon: LucideIcons.cpu,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildInputContainer({required Widget child}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF09090B), // Very dark bg
-        border: Border.all(color: Colors.grey.shade800),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: child,
+  Widget _buildSettingsGrid() {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        _buildSettingItem(
+          child: _buildGlassDropdown(
+            value: _selectedStyle,
+            items: ["No Style", "Cinematic", "Anime", "Noir"],
+            onChanged: (v) => setState(() => _selectedStyle = v!),
+            icon: LucideIcons.palette,
+            width: 160,
+          ),
+        ),
+        _buildSettingItem(
+          child: _buildGlassAction(
+            text: "Subject Reference",
+            icon: LucideIcons.user,
+            width: 180,
+          ),
+        ),
+        _buildSettingItem(
+          child: _buildGlassToggle(
+            label: "AUTO-SYNC",
+            value: _twoInOne,
+            onChanged: (v) => setState(() => _twoInOne = v),
+          ),
+        ),
+        _buildSettingItem(
+          child: _buildGlassToggle(
+            label: "VOICE",
+            value: _voiceEnabled,
+            onChanged: (v) => setState(() => _voiceEnabled = v),
+          ),
+        ),
+      ],
     );
   }
+
+  Widget _buildGenerateButton(
+    AutomationState automationState,
+    WorkflowState<CloneWorkflowData> workflowState,
+    BuildContext context,
+  ) {
+    final isBusy =
+        automationState.status == AutomationStatus.busy ||
+        workflowState.isRunning;
+
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: isBusy
+              ? [Colors.grey.shade900, Colors.grey.shade800]
+              : [Colors.blueAccent, Colors.blue.shade700],
+        ),
+        boxShadow: [
+          if (!isBusy)
+            BoxShadow(
+              color: Colors.blueAccent.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: isBusy ? null : () => _handleAction(context),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: isBusy
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                workflowState.isRunning
+                    ? "GENERATING..."
+                    : automationState.status == AutomationStatus.connected
+                    ? "GENERATE SEQUENCE"
+                    : "CONNECT ENGINE",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+      ),
+    );
+  }
+
+  void _handleAction(BuildContext context) async {
+    final automationNotifier = ref.read(veoAutomationProvider.notifier);
+    final automationState = ref.read(veoAutomationProvider);
+    final workflowNotifier = ref.read(cloneWorkflowProvider.notifier);
+
+    if (automationState.status != AutomationStatus.connected) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Please connect engine using 'Open No Login' first!"),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      return;
+    }
+
+    workflowNotifier.startGeneration();
+    try {
+      await automationNotifier.executeVeoAction(
+        action: "generate",
+        prompt: _promptController.text,
+      );
+      workflowNotifier.completeGeneration();
+    } catch (e) {
+      workflowNotifier.failGeneration(e.toString());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: $e"),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildStatusIndicator(String statusText) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Text(
+        statusText.toUpperCase(),
+        style: const TextStyle(
+          color: Colors.blueAccent,
+          fontSize: 10,
+          letterSpacing: 1.5,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  // --- Utility Widgets ---
+
+  Widget _buildNavLink(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: Colors.white60,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        letterSpacing: 1,
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(AutomationState state) {
+    final isConnected = state.status == AutomationStatus.connected;
+    return GlassContainer(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      borderRadius: 20,
+      opacity: 0.1,
+      border: Border.all(
+        color: isConnected
+            ? Colors.green.withValues(alpha: 0.5)
+            : Colors.orange.withValues(alpha: 0.5),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: isConnected ? Colors.green : Colors.orange,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            isConnected ? "ENGINE ACTIVE" : "ENGINE STANDBY",
+            style: TextStyle(
+              color: isConnected ? Colors.green : Colors.orange,
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGlassInput({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: TextField(
+        controller: controller,
+        style: const TextStyle(color: Colors.white, fontSize: 13),
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: const TextStyle(color: Colors.white24),
+          prefixIcon: Icon(icon, color: Colors.white38, size: 16),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassDropdown({
+    required String value,
+    required List<String> items,
+    required Function(String?) onChanged,
+    required IconData icon,
+    double? width,
+  }) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          dropdownColor: const Color(0xFF121212),
+          icon: Icon(icon, color: Colors.white38, size: 16),
+          isExpanded: true,
+          style: const TextStyle(color: Colors.white, fontSize: 13),
+          items: items
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassAction({
+    required String text,
+    required IconData icon,
+    required double width,
+  }) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white38, size: 16),
+          const SizedBox(width: 10),
+          Text(
+            text,
+            style: const TextStyle(color: Colors.white38, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGlassToggle({
+    required String label,
+    required bool value,
+    required Function(bool) onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white38,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: Colors.blueAccent,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingItem({required Widget child}) => child;
 }
