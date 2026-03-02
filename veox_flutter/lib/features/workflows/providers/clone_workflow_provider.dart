@@ -52,8 +52,9 @@ class CloneWorkflowNotifier
 
   WorkflowStatus _determineStatus(CloneWorkflowData data) {
     if (state.isRunning) return WorkflowStatus.running;
-    if (data.sourceUrl.isNotEmpty && data.prompt.isNotEmpty)
+    if (data.sourceUrl.isNotEmpty && data.prompt.isNotEmpty) {
       return WorkflowStatus.ready;
+    }
     return WorkflowStatus.editing;
   }
 

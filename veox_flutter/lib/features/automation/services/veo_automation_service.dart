@@ -176,8 +176,9 @@ class VeoAutomationService extends StateNotifier<AutomationState> {
 
       // 4. Workflow Execution
       if (action == 'generate') {
-        if (prompt == null)
+        if (prompt == null) {
           throw ArgumentError("Prompt is required for 'generate' action.");
+        }
 
         state = state.copyWith(currentAction: "Sending Generation Prompt...");
         final result = await _bridge.sendCommand('veo.generate', {

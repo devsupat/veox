@@ -65,6 +65,17 @@ class IsarService {
         .findFirst();
   }
 
+  Future<void> updateProfileGoogleAccount(
+    BrowserProfileModel profile,
+    GoogleAccountModel? account,
+  ) async {
+    final isar = await db;
+    await isar.writeTxn(() async {
+      profile.googleAccount.value = account;
+      await profile.googleAccount.save();
+    });
+  }
+
   // --- Implementasi CRUD GoogleAccount ---
 
   Future<void> saveGoogleAccount(GoogleAccountModel account) async {

@@ -19,22 +19,22 @@ enum ApiProvider {
   suno;
 
   String get displayName => switch (this) {
-        ApiProvider.replicate => 'Replicate',
-        ApiProvider.openai => 'OpenAI',
-        ApiProvider.anthropic => 'Anthropic',
-        ApiProvider.elevenlabs => 'ElevenLabs',
-        ApiProvider.suno => 'Suno',
-      };
+    ApiProvider.replicate => 'Replicate',
+    ApiProvider.openai => 'OpenAI',
+    ApiProvider.anthropic => 'Anthropic',
+    ApiProvider.elevenlabs => 'ElevenLabs',
+    ApiProvider.suno => 'Suno',
+  };
 
   String get _storageKey => 'veox_api_key_$name';
 
   /// Expected key prefix for format validation.
   String? get keyPrefix => switch (this) {
-        ApiProvider.replicate => 'r8_',
-        ApiProvider.openai => 'sk-',
-        ApiProvider.anthropic => 'sk-ant-',
-        _ => null, // No enforced prefix
-      };
+    ApiProvider.replicate => 'r8_',
+    ApiProvider.openai => 'sk-',
+    ApiProvider.anthropic => 'sk-ant-',
+    _ => null, // No enforced prefix
+  };
 }
 
 /// [SecureStorageService] is a singleton that wraps [FlutterSecureStorage].
@@ -50,6 +50,7 @@ class SecureStorageService {
     mOptions: MacOsOptions(
       // Accessible only when the device is unlocked. Best security posture.
       accessibility: KeychainAccessibility.first_unlock_this_device,
+      useDataProtectionKeyChain: false,
     ),
   );
 

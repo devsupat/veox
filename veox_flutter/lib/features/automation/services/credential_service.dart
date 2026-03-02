@@ -7,6 +7,7 @@ class CredentialService {
   final _storage = const FlutterSecureStorage(
     mOptions: MacOsOptions(
       accessibility: KeychainAccessibility.first_unlock_this_device,
+      useDataProtectionKeyChain: false,
     ),
   );
 

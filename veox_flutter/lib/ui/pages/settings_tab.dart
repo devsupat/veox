@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:veox_flutter/ui/widgets/add_account_dialog.dart';
+import 'package:veox_flutter/ui/widgets/profile_assignment_dialog.dart';
 import 'package:veox_flutter/features/automation/services/google_auth_service.dart';
 import 'package:veox_flutter/core/database/google_account_model.dart';
 
@@ -199,14 +200,12 @@ class _SettingsTabState extends ConsumerState<SettingsTab> {
                                   // Actions
                                   IconButton(
                                     onPressed: () {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            "Profile assignment coming soon",
-                                          ),
-                                        ),
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) =>
+                                            ProfileAssignmentDialog(
+                                              account: acc,
+                                            ),
                                       );
                                     },
                                     icon: const Icon(

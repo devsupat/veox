@@ -31,17 +31,14 @@ import 'package:window_manager/window_manager.dart';
 Future<void> main() async {
   // Wrap the entire app startup in runZonedGuarded so unhandled async errors
   // (e.g., from Isolates, timers) are logged rather than silently dropped.
-  await runZonedGuarded(
-    _boot,
-    (error, stack) {
-      AppLogger.error(
-        'Unhandled zone error',
-        tag: 'Main',
-        error: error,
-        stackTrace: stack,
-      );
-    },
-  );
+  await runZonedGuarded(_boot, (error, stack) {
+    AppLogger.error(
+      'Unhandled zone error',
+      tag: 'Main',
+      error: error,
+      stackTrace: stack,
+    );
+  });
 }
 
 Future<void> _boot() async {
@@ -91,10 +88,7 @@ Future<void> _boot() async {
   });
 
   runApp(
-    ProviderScope(
-      observers: [VeoxProviderObserver()],
-      child: const VeoxApp(),
-    ),
+    ProviderScope(observers: [VeoxProviderObserver()], child: const VeoxApp()),
   );
 }
 
@@ -114,8 +108,10 @@ Future<void> _recoverStaleTasks() async {
       }
       await isar.taskModels.putAll(stale);
       if (stale.isNotEmpty) {
-        AppLogger.warn('Recovered ${stale.length} stale task(s).',
-            tag: 'CrashRecovery');
+        AppLogger.warn(
+          'Recovered ${stale.length} stale task(s).',
+          tag: 'CrashRecovery',
+        );
       }
     });
   } catch (e) {

@@ -1,0 +1,11 @@
+2026/03/02-08:53:54.649 4281d2 Reusing MANIFEST /Users/macbookpro15/Documents/webappscript/veox/veox_flutter/automation_engine/handlers/user_data/default/Default/IndexedDB/https_labs.google_0.indexeddb.leveldb/MANIFEST-000001
+2026/03/02-08:53:54.656 4281d2 Recovering log #3
+2026/03/02-08:53:54.656 4281d2 Reusing old log /Users/macbookpro15/Documents/webappscript/veox/veox_flutter/automation_engine/handlers/user_data/default/Default/IndexedDB/https_labs.google_0.indexeddb.leveldb/000003.log 
+2026/03/02-08:53:56.761 4281e4 Level-0 table #5: started
+2026/03/02-08:53:56.782 4281e4 Level-0 table #5: 1296 bytes OK
+2026/03/02-08:53:56.811 4281e4 Delete type=0 #3
+2026/03/02-08:53:56.815 4281d2 Manual compaction at level-0 from '\x00\x01\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x02\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/03/02-08:54:53.608 4281d2 Level-0 table #7: started
+2026/03/02-08:54:53.630 4281d2 Level-0 table #7: 7718 bytes OK
+2026/03/02-08:54:53.659 4281d2 Delete type=0 #4
+2026/03/02-08:54:53.661 4281d2 Manual compaction at level-0 from '\x00\x05\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x06\x00\x00\x00' @ 0 : 0; will stop at (end)
