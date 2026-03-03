@@ -64,8 +64,9 @@ class DioClient {
     final key = await SecureStorageService.instance.getApiKey(provider);
     if (key == null || key.isEmpty) {
       throw AuthFailure(
-          'No API key found for ${provider.displayName}. '
-          'Please add it in Settings.');
+        'No API key found for ${provider.displayName}. '
+        'Please add it in Settings.',
+      );
     }
 
     final baseUrl = _baseUrls[provider]!;
@@ -86,9 +87,7 @@ class DioClient {
       ),
     );
 
-    client.interceptors.addAll([
-      _RetryInterceptor(maxAttempts: 3),
-    ]);
+    client.interceptors.addAll([_RetryInterceptor(maxAttempts: 3)]);
 
     return client;
   }
@@ -111,18 +110,21 @@ class _LoggingInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    AppLogger.debug('← ${response.statusCode} ${response.requestOptions.uri}',
-        tag: 'HTTP');
+    AppLogger.debug(
+      '← ${response.statusCode} ${response.requestOptions.uri}',
+      tag: 'HTTP',
+    );
     handler.next(response);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     AppLogger.error(
-        '✗ ${err.requestOptions.method} ${err.requestOptions.uri} '
-        '— ${err.message}',
-        tag: 'HTTP',
-        error: err);
+      '✗ ${err.requestOptions.method} ${err.requestOptions.uri} '
+      '— ${err.message}',
+      tag: 'HTTP',
+      error: err,
+    );
     handler.next(err);
   }
 }
@@ -133,27 +135,33 @@ class _RetryInterceptor extends Interceptor {
   final int maxAttempts;
   _RetryInterceptor({this.maxAttempts = 3});
 
-  static const _backoffSeconds = [1, 5, 30]; // per attempt (0-indexed after 1st)
+  static const _backoffSeconds = [
+    1,
+    5,
+    30,
+  ]; // per attempt (0-indexed after 1st)
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     final attempt = err.requestOptions.extra['_retryCount'] as int? ?? 0;
 
-    final isRetryable = err.type == DioExceptionType.connectionTimeout ||
+    final isRetryable =
+        err.type == DioExceptionType.connectionTimeout ||
         err.type == DioExceptionType.receiveTimeout ||
         err.type == DioExceptionType.connectionError;
 
     if (isRetryable && attempt < maxAttempts - 1) {
-      final delay = _backoffSeconds[attempt.clamp(0, _backoffSeconds.length - 1)];
+      final delay =
+          _backoffSeconds[attempt.clamp(0, _backoffSeconds.length - 1)];
       AppLogger.warn(
-          'Retry ${attempt + 1}/$maxAttempts after ${delay}s '
-          '— ${err.requestOptions.uri}',
-          tag: 'HTTP');
+        'Retry ${attempt + 1}/$maxAttempts after ${delay}s '
+        '— ${err.requestOptions.uri}',
+        tag: 'HTTP',
+      );
 
       await Future<void>.delayed(Duration(seconds: delay));
 
-      final options = err.requestOptions
-        ..extra['_retryCount'] = attempt + 1;
+      final options = err.requestOptions..extra['_retryCount'] = attempt + 1;
 
       try {
         final response = await DioClient.instance.plain.fetch(options);
@@ -179,14 +187,17 @@ class _RetryInterceptor extends Interceptor {
   NetworkFailure _mapDioError(DioException err) {
     return switch (err.type) {
       DioExceptionType.badResponse => NetworkFailure(
-          'Server returned ${err.response?.statusCode}: '
-          '${err.response?.data}',
-          statusCode: err.response?.statusCode),
+        'Server returned ${err.response?.statusCode}: '
+        '${err.response?.data}',
+        statusCode: err.response?.statusCode,
+      ),
       DioExceptionType.connectionTimeout ||
-      DioExceptionType.receiveTimeout =>
-        const NetworkFailure('Request timed out. The AI API may be overloaded.'),
-      DioExceptionType.connectionError =>
-        const NetworkFailure('No internet connection.'),
+      DioExceptionType.receiveTimeout => const NetworkFailure(
+        'Request timed out. The AI API may be overloaded.',
+      ),
+      DioExceptionType.connectionError => const NetworkFailure(
+        'No internet connection.',
+      ),
       _ => NetworkFailure(err.message ?? 'Unknown network error'),
     };
   }

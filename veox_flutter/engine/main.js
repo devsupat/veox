@@ -11,7 +11,7 @@
 // Commands:
 //   ping, open_browser, close_browser, navigate_to, fill_input,
 //   click_element, wait_for_element, run_script, get_cookies, set_cookies,
-//   screenshot, generate_video
+//   screenshot, generate_video, job_start, job_cancel
 
 'use strict';
 
@@ -41,12 +41,22 @@ const info = (msg) => log('info', msg);
 const warn = (msg) => log('warn', msg);
 const err = (msg) => log('error', msg);
 
+// ── Debug Mode ─────────────────────────────────────────────────────────────
+const DEBUG = process.env.VEOX_DEBUG === '1' || process.env.VEOX_DEBUG === 'true';
+if (DEBUG) info('DEBUG mode enabled — artifacts will be saved on failure.');
+
 // ── State ───────────────────────────────────────────────────────────────────
 /** @type {Map<string, import('playwright').BrowserContext>} */
 const contexts = new Map();  // profileId → BrowserContext
 
 /** @type {Map<string, import('playwright').Page>} */
 const pages = new Map();     // profileId → active Page
+
+/** @type {Map<string, boolean>} */
+const activeJobs = new Map(); // taskId → isCancelled
+
+/** @type {Map<string, AbortController>} */
+const activeControllers = new Map(); // taskId → AbortController
 
 // ── Command Router ──────────────────────────────────────────────────────────
 rl.on('line', async (line) => {
@@ -69,7 +79,13 @@ rl.on('line', async (line) => {
     send({ id, type: 'result', status: 'success', data });
   } catch (e) {
     err(`[${id}] ${command} failed: ${e.message}`);
-    send({ id, type: 'result', status: 'error', error: e.message });
+    send({
+      id,
+      type: 'result',
+      status: 'error',
+      error: e.message,
+      retryable: e.retryable !== false // Default to true unless explicitly false
+    });
   }
 });
 
@@ -80,6 +96,9 @@ async function dispatch(command, params, taskId) {
     // Connectivity
     case 'ping':
       return { pong: true, time: Date.now() };
+
+    // Diagnostics
+    case 'engine.doctor': return engineDoctor();
 
     // Browser lifecycle
     case 'open_browser': return openBrowser(params);
@@ -102,9 +121,396 @@ async function dispatch(command, params, taskId) {
     // High-level automation
     case 'generate_video': return generateVideo(params, taskId);
 
+    // VEOX Background Jobs
+    case 'job_start': return jobStart(params, taskId);
+    case 'job_cancel': return jobCancel(params, taskId);
+
     default:
       throw new Error(`Unknown command: ${command}`);
   }
+}
+
+// ── VEOX Background Jobs ─────────────────────────────────────────────────────
+
+async function jobCancel(params, taskId) {
+  const targetId = params.taskId;
+  if (!targetId) throw new Error('"taskId" param required for job_cancel.');
+  activeJobs.set(targetId, true);
+
+  const controller = activeControllers.get(targetId);
+  if (controller) {
+    controller.abort(new Error(`Job ${targetId} was cancelled.`));
+    info(`Aborted controller for job ${targetId}`);
+  }
+
+  info(`Job cancel requested for ${targetId}`);
+  return { cancelled: true, targetId };
+}
+
+async function jobStart(params, taskId) {
+  const { type, taskId: jobId } = params;
+  if (!type) throw new Error('"type" param required for job_start.');
+  if (!jobId) throw new Error('"taskId" param required for job_start.');
+
+  // Reset cancellation flag
+  activeJobs.set(jobId, false);
+  const controller = new AbortController();
+  activeControllers.set(jobId, controller);
+
+  try {
+    switch (type) {
+      case 'browser_screenshot':
+        return await _runBrowserScreenshot(params, jobId, controller.signal);
+      case 'browser_generate_video':
+        return await _runBrowserVideo(params, jobId, controller.signal);
+      case 'open_browser_test':
+        return await _runOpenBrowserTest(params, jobId, controller.signal);
+      default:
+        throw new Error(`Unknown job type: ${type}`);
+    }
+  } catch (e) {
+    const isRetryable = e.retryable !== undefined ? e.retryable : true;
+    throw Object.assign(e, { retryable: isRetryable });
+  } finally {
+    activeJobs.delete(jobId);
+    activeControllers.delete(jobId);
+  }
+}
+
+function _checkCancel(jobId) {
+  if (activeJobs.get(jobId)) {
+    throw Object.assign(
+      new Error(`Job ${jobId} was cancelled.`),
+      { retryable: false }
+    );
+  }
+}
+
+function emitProgress(jobId, stage, data = {}) {
+  info(`[state] ${jobId} → ${stage}`);
+  send({ type: 'event', id: jobId, stage, ...data });
+}
+
+/**
+ * Captures a screenshot + page HTML for debugging when DEBUG is enabled.
+ * Safe to call — errors are swallowed so they never mask the real failure.
+ */
+async function debugCapture(page, outputPath, jobId, stage) {
+  if (!DEBUG || !page) return;
+  try {
+    const dir = path.join(path.dirname(outputPath), 'debug');
+    fs.mkdirSync(dir, { recursive: true });
+    const base = `${jobId}_${stage}`;
+    await page.screenshot({ path: path.join(dir, `${base}.png`), fullPage: true });
+    const html = await page.content();
+    fs.writeFileSync(path.join(dir, `${base}.html`), html, 'utf8');
+    info(`[debug] saved artifacts for ${base}`);
+  } catch (e) {
+    warn(`[debug] capture failed: ${e.message}`);
+  }
+}
+
+// ── Engine Doctor ─────────────────────────────────────────────────────────────
+
+/**
+ * Diagnostics command: callable as engine.doctor from Flutter.
+ * Returns Node/Playwright/chromium info and a brief headed canary launch.
+ */
+async function engineDoctor() {
+  const result = {
+    node_version: process.version,
+    platform: process.platform,
+    arch: process.arch,
+    cwd: process.cwd(),
+    env_PLAYWRIGHT_BROWSERS_PATH: process.env.PLAYWRIGHT_BROWSERS_PATH || '(not set)',
+    playwright_version: null,
+    chromium_executable_path: null,
+    canLaunchHeaded: false,
+    errors: [],
+  };
+
+  // 1. Playwright version
+  try {
+    const pw = require('playwright/package.json');
+    result.playwright_version = pw.version;
+  } catch (e) {
+    result.errors.push(`playwright version check: ${e.message}`);
+  }
+
+  // 2. Chromium executable path
+  try {
+    const { chromium: rawChromium } = require('playwright');
+    result.chromium_executable_path = rawChromium.executablePath();
+  } catch (e) {
+    result.errors.push(`executablePath: ${e.message}`);
+  }
+
+  // 3. Attempt headed canary launch (10s timeout)
+  let testCtx = null;
+  try {
+    const { chromium: rawChromium } = require('playwright');
+    testCtx = await rawChromium.launchPersistentContext(
+      path.join(os.tmpdir(), 'veox_doctor_profile'),
+      {
+        headless: false,
+        args: ['--no-first-run', '--no-default-browser-check', '--disable-dev-shm-usage'],
+        timeout: 10000,
+      }
+    );
+    result.canLaunchHeaded = true;
+    info('[doctor] ✅ Headed browser launched successfully.');
+  } catch (e) {
+    result.errors.push(`canLaunchHeaded failed: ${e.message}`);
+    err(`[doctor] ❌ Headed launch failed: ${e.message}`);
+  } finally {
+    if (testCtx) { try { await testCtx.close(); } catch (_) { } }
+  }
+
+  return result;
+}
+
+// ── Open Browser Test Workflow ─────────────────────────────────────────────────
+
+/**
+ * Minimal repro: opens a URL in a headed browser for N seconds.
+ * Use to verify browser visibility independently of any target site.
+ */
+async function _runOpenBrowserTest(params, jobId, signal) {
+  const testProfileId = `__browser_test_${jobId}`;
+  const testUrl = params.url || 'https://labs.google/fx/tools/flow';
+  const durationMs = (params.durationSeconds || 30) * 1000;
+
+  emitProgress(jobId, 'open');
+  info(`[browser_test] Opening ${testUrl} in headed mode for ${durationMs / 1000}s...`);
+
+  await openBrowser({
+    profileId: testProfileId,
+    headless: false,
+    userDataDir: path.join(os.tmpdir(), 'veox_browser_test'),
+  });
+  _checkCancel(jobId);
+
+  emitProgress(jobId, 'navigate');
+  const page = await getPage({ profileId: testProfileId });
+  await page.goto(testUrl, { waitUntil: 'load', timeout: 15000 });
+  const title = await page.title();
+  info(`[browser_test] ✅ Browser visible — title: "${title}"`);
+
+  emitProgress(jobId, 'waiting', { message: `Browser open for ${durationMs / 1000}s. Close it or wait.` });
+
+  // Wait for duration or cancellation
+  const waitPromise = page.waitForTimeout(durationMs);
+  const abortPromise = new Promise((_, reject) => {
+    if (!signal) return;
+    if (signal.aborted) return reject(signal.reason);
+    signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+  });
+  try {
+    await Promise.race([waitPromise, abortPromise]);
+  } catch (_) {
+    info('[browser_test] Test cancelled early.');
+  }
+
+  emitProgress(jobId, 'done');
+  await closeBrowser({ profileId: testProfileId });
+  return { status: 'success', url: testUrl, title };
+}
+
+async function _runBrowserScreenshot(params, jobId, signal) {
+  const FLOW_URL = 'https://labs.google/fx/tools/flow';
+  const { profileId = 'default', url = FLOW_URL, outputPath } = params;
+  if (!outputPath) throw Object.assign(new Error('"outputPath" required for browser_screenshot.'), { retryable: false });
+
+  // 1. Open
+  emitProgress(jobId, 'open');
+  await openBrowser({ profileId, headless: false, userDataDir: path.join(os.homedir(), 'Documents', 'VEOX', 'profiles', profileId) });
+  _checkCancel(jobId);
+
+  // 2. Navigate
+  const targetUrl = url || FLOW_URL;
+  emitProgress(jobId, 'navigate', { url: targetUrl });
+  const page = await getPage({ profileId });
+  try {
+    await page.goto(targetUrl, { waitUntil: 'load', timeout: 30000 });
+  } catch (e) {
+    throw Object.assign(new Error(`Navigation failed: ${e.message}`), { retryable: true });
+  }
+  _checkCancel(jobId);
+
+  // 3. Login Check
+  emitProgress(jobId, 'login_check');
+  const needsLogin = await page.evaluate(() => {
+    return document.querySelector('input[type="email"]') !== null ||
+      document.body.innerText.includes('Sign in');
+  });
+
+  if (needsLogin) {
+    send({ type: 'event', action: 'needs_login', profileId, id: jobId });
+    info(`[${jobId}] Browser paused at ${targetUrl}, waiting for manual login...`);
+    return { status: 'paused_needs_login', profileId };
+  }
+
+  // 4. Screenshot
+  emitProgress(jobId, 'screenshot');
+  await page.waitForTimeout(2000); // Let UI settle
+  _checkCancel(jobId);
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  await page.screenshot({ path: outputPath, fullPage: true });
+
+  // 5. Done
+  emitProgress(jobId, 'done', { outputPath });
+  return { status: 'success', outputPath };
+}
+
+async function _runBrowserVideo(params, jobId, signal) {
+  const FLOW_URL = 'https://labs.google/fx/tools/flow';
+  const { profileId = 'default', url = FLOW_URL, prompt, outputPath } = params;
+  if (!prompt) throw Object.assign(new Error('"prompt" required.'), { retryable: false });
+  if (!outputPath) throw Object.assign(new Error('"outputPath" required.'), { retryable: false });
+
+  // 1. Open
+  emitProgress(jobId, 'open');
+  await openBrowser({ profileId, headless: false, userDataDir: path.join(os.homedir(), 'Documents', 'VEOX', 'profiles', profileId) });
+  _checkCancel(jobId);
+  if (signal?.aborted) throw signal.reason;
+
+  // 2. Navigate
+  emitProgress(jobId, 'navigate', { url });
+  let page = await getPage({ profileId });
+  try {
+    await page.goto(url, { waitUntil: 'load', timeout: 30000 });
+  } catch (e) {
+    throw Object.assign(new Error(`Navigation failed: ${e.message}`), { retryable: true });
+  }
+  _checkCancel(jobId);
+  if (signal?.aborted) throw signal.reason;
+
+  // 3. Login Check
+  emitProgress(jobId, 'login_check');
+  const needsLogin = await page.evaluate(() => {
+    return document.querySelector('input[type="email"]') !== null ||
+      document.body.innerText.includes('Sign in') ||
+      document.body.innerText.includes('Sign In');
+  });
+
+  if (needsLogin) {
+    send({ type: 'event', action: 'needs_login', profileId, id: jobId });
+    info(`[${jobId}] Browser paused, waiting for manual login...`);
+    return { status: 'paused_needs_login', profileId };
+  }
+
+  // 4. Prompt Fill
+  emitProgress(jobId, 'prompt_fill');
+  try {
+    // Robust selector: try placeholder, then generic textarea
+    let promptInput = page.getByPlaceholder(/Describe/i).first();
+    if (await promptInput.count() === 0) {
+      promptInput = page.locator('textarea').first();
+    }
+    await promptInput.waitFor({ state: 'visible', timeout: 15000 });
+    await promptInput.fill(prompt);
+  } catch (e) {
+    await debugCapture(page, outputPath, jobId, 'prompt_fill_error');
+    throw Object.assign(new Error(`Failed to find/fill prompt input: ${e.message}`), { retryable: true });
+  }
+  _checkCancel(jobId);
+  if (signal?.aborted) throw signal.reason;
+
+  // 5. Submit
+  emitProgress(jobId, 'submit');
+  try {
+    // Robust selector: role button Generate, or text Generate, or a common generate button class
+    let generateBtn = page.getByRole('button', { name: /Generate/i }).first();
+    if (await generateBtn.count() === 0) {
+      generateBtn = page.locator('button:has-text("Generate")').first();
+    }
+    await generateBtn.waitFor({ state: 'visible', timeout: 5000 });
+    await generateBtn.click();
+  } catch (e) {
+    await debugCapture(page, outputPath, jobId, 'submit_error');
+    throw Object.assign(new Error(`Failed to click generate: ${e.message}`), { retryable: true });
+  }
+
+  // 6. Poll for completion
+  emitProgress(jobId, 'poll');
+
+  const pollPromise = (async () => {
+    let attempts = 0;
+    while (attempts < 60) { // 60 * 5s = 5 mins max
+      if (signal?.aborted) throw signal.reason;
+
+      // Check for policy block or error
+      const errorText = await page.locator('text=/Policy|Blocked|Error/i').count();
+      if (errorText > 0) {
+        throw Object.assign(new Error('Generation blocked by platform policy or general error.'), { retryable: false });
+      }
+
+      // Check for download button
+      const downloadBtnRole = page.getByRole('button', { name: /Download/i }).first();
+      const downloadBtnText = page.locator('button:has-text("Download")').first();
+      const downloadBtnAria = page.locator('button[aria-label*="Download" i]').first();
+
+      if (await downloadBtnRole.isVisible() || await downloadBtnText.isVisible() || await downloadBtnAria.isVisible()) {
+        break; // Ready!
+      }
+
+      await page.waitForTimeout(5000);
+      attempts++;
+    }
+    if (attempts >= 60) {
+      throw Object.assign(new Error('Timed out waiting for generation to complete.'), { retryable: true });
+    }
+  })();
+
+  const abortPromise = new Promise((_, reject) => {
+    if (!signal) return;
+    if (signal.aborted) return reject(signal.reason);
+    signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+  });
+
+  try {
+    await Promise.race([pollPromise, abortPromise]);
+  } catch (e) {
+    if (e === signal?.reason) throw e;
+    throw e;
+  }
+  if (signal?.aborted) throw signal.reason;
+
+  // 7. Download
+  emitProgress(jobId, 'download');
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  const partialPath = outputPath + '.partial';
+
+  try {
+    const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
+
+    // Find valid download btn again
+    let validDownloadBtn;
+    if (await page.getByRole('button', { name: /Download/i }).first().isVisible()) {
+      validDownloadBtn = page.getByRole('button', { name: /Download/i }).first();
+    } else if (await page.locator('button:has-text("Download")').first().isVisible()) {
+      validDownloadBtn = page.locator('button:has-text("Download")').first();
+    } else {
+      validDownloadBtn = page.locator('button[aria-label*="Download" i]').first();
+    }
+
+    await validDownloadBtn.click();
+
+    const downloadEvent = await Promise.race([downloadPromise, abortPromise]);
+    if (signal?.aborted) throw signal.reason;
+
+    await downloadEvent.saveAs(partialPath);
+    fs.renameSync(partialPath, outputPath);
+  } catch (e) {
+    if (fs.existsSync(partialPath)) fs.unlinkSync(partialPath);
+    if (e === signal?.reason) throw e;
+    throw Object.assign(new Error(`Download failed: ${e.message}`), { retryable: true });
+  }
+
+  // 8. Done
+  emitProgress(jobId, 'done', { outputPath });
+  return { status: 'success', outputPath };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -133,8 +539,13 @@ async function getPage(params) {
 
 // ── Browser Lifecycle ────────────────────────────────────────────────────────
 
-async function openBrowser({ headless = true, profileId = 'default', userDataDir, proxyServer } = {}) {
+/**
+ * Change headless default to FALSE so that any login flow shows a browser window.
+ * Workflows that need truly headless can pass headless:true explicitly.
+ */
+async function openBrowser({ headless = false, profileId = 'default', userDataDir, proxyServer } = {}) {
   if (contexts.has(profileId)) {
+    info(`Browser already open for profile "${profileId}", reusing.`);
     return { status: 'already_open', profileId };
   }
 
@@ -142,6 +553,8 @@ async function openBrowser({ headless = true, profileId = 'default', userDataDir
     '--no-first-run',
     '--no-default-browser-check',
     '--disable-blink-features=AutomationControlled',
+    '--disable-dev-shm-usage',          // Stability on low-end machines
+    '--disable-extensions-except=',     // Prevent extensions from blocking
   ];
   if (proxyServer) launchArgs.push(`--proxy-server=${proxyServer}`);
 
@@ -149,20 +562,37 @@ async function openBrowser({ headless = true, profileId = 'default', userDataDir
     headless,
     args: launchArgs,
     viewport: { width: 1280, height: 720 },
+    // Do NOT specify channel here — always use bundled Playwright chromium.
+    // Specifying channel:'chrome' requires system Chrome to be installed.
   };
 
+  info(`Launching browser: headless=${headless}, profile=${profileId}, userDataDir=${userDataDir || '(none)'}`);
+
   let ctx;
-  if (userDataDir) {
-    // Persistent context preserves cookies, localStorage, and login state.
-    ctx = await chromium.launchPersistentContext(userDataDir, options);
-  } else {
-    const browser = await chromium.launch(options);
-    ctx = await browser.newContext();
+  try {
+    if (userDataDir) {
+      // Persistent context preserves cookies, localStorage, and login state.
+      fs.mkdirSync(userDataDir, { recursive: true }); // Ensure dir exists
+      ctx = await chromium.launchPersistentContext(userDataDir, options);
+    } else {
+      const browser = await chromium.launch(options);
+      ctx = await browser.newContext();
+    }
+  } catch (e) {
+    err(`Browser launch failed for profile "${profileId}": ${e.message}`);
+    err('TIP: Run `npx playwright install chromium` in the engine directory to install the browser.');
+    throw Object.assign(
+      new Error(`Browser launch failed: ${e.message}. Run 'npx playwright install chromium' to fix.`),
+      { retryable: false }
+    );
   }
 
   contexts.set(profileId, ctx);
-  info(`Browser opened for profile "${profileId}" (headless=${headless})`);
-  return { status: 'opened', profileId, pid: process.pid };
+  if (!headless) {
+    info(`✅ Browser launched HEADED (visible window) for profile "${profileId}" — user can now interact.`);
+  }
+  info(`Browser opened for profile "${profileId}" (headless=${headless}, pid=${process.pid})`);
+  return { status: 'opened', profileId, pid: process.pid, headless };
 }
 
 async function closeBrowser({ profileId = 'default' } = {}) {
@@ -275,13 +705,13 @@ async function generateVideo({ prompt, platform = 'veo3', profileId = 'default',
 
 // ── Veo3 ─────────────────────────────────────────────────────────────────────
 
-const VEO3_URL = 'https://labs.google.com/veo';
+const VEO3_URL = 'https://labs.google/fx/tools/flow';
 
 async function generateVeo3(prompt, profileId, outputDir, taskId, maxWaitMs) {
   const page = await getPage({ profileId });
 
   // Step 1: Navigate (skip if already there)
-  if (!page.url().includes('labs.google.com')) {
+  if (!page.url().includes('labs.google')) {
     info('Navigating to Veo3…');
     await page.goto(VEO3_URL, { waitUntil: 'networkidle', timeout: 30000 });
   }

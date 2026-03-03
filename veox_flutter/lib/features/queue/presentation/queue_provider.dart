@@ -28,6 +28,45 @@ final taskListProvider = StreamProvider<List<TaskModel>>((ref) async* {
 });
 
 // ---------------------------------------------------------------------------
+// Queue Stats
+// ---------------------------------------------------------------------------
+
+class QueueStats {
+  const QueueStats({
+    this.total = 0,
+    this.done = 0,
+    this.active = 0,
+    this.failed = 0,
+    this.canceled = 0,
+  });
+  final int total;
+  final int done;
+  final int active;
+  final int failed;
+  final int canceled;
+}
+
+final queueStatsProvider = Provider<QueueStats>((ref) {
+  final tasksAsync = ref.watch(taskListProvider);
+  final tasks = tasksAsync.value ?? [];
+  return QueueStats(
+    total: tasks.length,
+    done: tasks.where((t) => t.status == 'completed').length,
+    active: tasks
+        .where(
+          (t) =>
+              t.status == 'running' ||
+              t.status == 'pending' ||
+              t.status == 'retrying' ||
+              t.status == 'paused_needs_login',
+        )
+        .length,
+    failed: tasks.where((t) => t.status == 'failed').length,
+    canceled: tasks.where((t) => t.status == 'canceled').length,
+  );
+});
+
+// ---------------------------------------------------------------------------
 // Queue state
 // ---------------------------------------------------------------------------
 
@@ -35,39 +74,31 @@ class QueueState {
   const QueueState({
     this.isRunning = false,
     this.circuitOpen = false,
-    this.activeWorkers = 0,
-    this.concurrency = 3,
     this.lastEvent,
   });
 
   final bool isRunning;
   final bool circuitOpen;
-  final int activeWorkers;
-  final int concurrency;
   final QueueProgressEvent? lastEvent;
 
   QueueState copyWith({
     bool? isRunning,
     bool? circuitOpen,
-    int? activeWorkers,
-    int? concurrency,
     QueueProgressEvent? lastEvent,
-  }) =>
-      QueueState(
-        isRunning: isRunning ?? this.isRunning,
-        circuitOpen: circuitOpen ?? this.circuitOpen,
-        activeWorkers: activeWorkers ?? this.activeWorkers,
-        concurrency: concurrency ?? this.concurrency,
-        lastEvent: lastEvent ?? this.lastEvent,
-      );
+  }) => QueueState(
+    isRunning: isRunning ?? this.isRunning,
+    circuitOpen: circuitOpen ?? this.circuitOpen,
+    lastEvent: lastEvent ?? this.lastEvent,
+  );
 }
 
 // ---------------------------------------------------------------------------
 // Notifier
 // ---------------------------------------------------------------------------
 
-final queueNotifierProvider =
-    StateNotifierProvider<QueueNotifier, QueueState>((ref) {
+final queueNotifierProvider = StateNotifierProvider<QueueNotifier, QueueState>((
+  ref,
+) {
   return QueueNotifier();
 });
 
@@ -91,10 +122,9 @@ class QueueNotifier extends StateNotifier<QueueState> {
 
   // ── Control ───────────────────────────────────────────────────────────────
 
-  Future<void> start({int? concurrency}) async {
-    final c = concurrency ?? state.concurrency;
-    await _service.start(concurrency: c);
-    state = state.copyWith(isRunning: true, concurrency: c);
+  Future<void> start() async {
+    await _service.start();
+    state = state.copyWith(isRunning: true);
   }
 
   void pause() {
@@ -103,7 +133,7 @@ class QueueNotifier extends StateNotifier<QueueState> {
   }
 
   void stop() {
-    _service.stop();
+    _service.stop(); // fire-and-forget: cancels active tasks in background
     state = state.copyWith(isRunning: false);
   }
 
@@ -112,13 +142,14 @@ class QueueNotifier extends StateNotifier<QueueState> {
     if (!state.isRunning) await start();
   }
 
+  Future<void> resumeAllPaused() async {
+    await _service.resumeAllPaused();
+    if (!state.isRunning) await start();
+  }
+
   void resetCircuit() {
     _service.resetCircuit();
     state = state.copyWith(circuitOpen: false);
-  }
-
-  void setConcurrency(int value) {
-    state = state.copyWith(concurrency: value.clamp(1, 10));
   }
 
   // ── Enqueue ───────────────────────────────────────────────────────────────
@@ -126,9 +157,37 @@ class QueueNotifier extends StateNotifier<QueueState> {
   Future<TaskModel> enqueue({
     required String type,
     required Map<String, dynamic> payload,
+    String? expectedOutputPath,
     int priority = 5,
   }) {
-    return _service.enqueue(type: type, payload: payload, priority: priority);
+    return _service.enqueue(
+      type: type,
+      payload: payload,
+      expectedOutputPath: expectedOutputPath,
+      priority: priority,
+    );
+  }
+
+  Future<int> enqueueBulk({
+    required List<String> prompts,
+    required String profileId,
+    required String outputDir,
+    String? projectId,
+    List<String>? sceneIds,
+    int from = 1,
+    int? to,
+    bool skipDone = true,
+  }) {
+    return _service.enqueueBulk(
+      prompts: prompts,
+      profileId: profileId,
+      outputDir: outputDir,
+      projectId: projectId,
+      sceneIds: sceneIds,
+      from: from,
+      to: to,
+      skipDone: skipDone,
+    );
   }
 
   @override

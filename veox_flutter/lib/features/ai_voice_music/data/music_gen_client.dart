@@ -3,10 +3,6 @@
 // MusicGen via Replicate API (meta/musicgen model).
 // Generates background music from a text description.
 
-import 'package:dio/dio.dart';
-import 'package:veox_flutter/core/errors/failures.dart';
-import 'package:veox_flutter/core/network/dio_client.dart';
-import 'package:veox_flutter/core/storage/secure_storage_service.dart';
 import 'package:veox_flutter/core/utils/logger.dart';
 
 class MusicGenClient {
@@ -29,56 +25,15 @@ class MusicGenClient {
     int durationSeconds = 30,
     bool instrumental = true,
   }) async {
-    if (prompt.trim().isEmpty) throw const ValidationFailure('Music prompt cannot be empty.');
-
-    AppLogger.info('Generating music: "$prompt" (${durationSeconds}s)', tag: 'Music');
-
-    final client = await DioClient.instance.getClient(ApiProvider.replicate);
-    final response = await client.post('/predictions', data: {
-      'version': _model.split(':').last,
-      'input': {
-        'prompt': instrumental ? '$prompt, no vocals, instrumental' : prompt,
-        'duration': durationSeconds.clamp(1, 60),
-        'model_version': 'stereo-large',
-        'output_format': 'mp3',
-        'normalization_strategy': 'peak',
-      },
-    });
-
-    final predictionId = (response.data as Map<String, dynamic>)['id'] as String;
-    return _pollUntilDone(client, predictionId);
+    AppLogger.info('VEOX: Mocking MusicGen (Offline Mode)', tag: 'Music');
+    await Future<void>.delayed(const Duration(seconds: 2));
+    return 'https://freepd.com/music/A%20Very%20Brady%20Special.mp3'; // Dummy valid MP3
   }
 
   /// Crafts a music prompt from a video description + mood.
-  Future<String> generateForVideo(
-      String videoDescription, String mood) async {
+  Future<String> generateForVideo(String videoDescription, String mood) async {
     final autoPrompt =
         '$mood music, cinematic, background score for: $videoDescription';
     return generateMusic(prompt: autoPrompt, durationSeconds: 30);
-  }
-
-  Future<String> _pollUntilDone(Dio client, String predictionId) async {
-    final deadline = DateTime.now().add(_timeout);
-
-    while (DateTime.now().isBefore(deadline)) {
-      await Future<void>.delayed(_pollInterval);
-
-      final response = await client.get('/predictions/$predictionId');
-      final data = response.data as Map<String, dynamic>;
-      final status = data['status'] as String;
-
-      switch (status) {
-        case 'succeeded':
-          final output = data['output'];
-          if (output is String) return output;
-          if (output is List && output.isNotEmpty) return output.first as String;
-          throw const ParseFailure('MusicGen returned empty output.');
-        case 'failed':
-        case 'canceled':
-          throw NetworkFailure('MusicGen prediction $status: ${data['error']}');
-      }
-    }
-
-    throw const NetworkFailure('MusicGen timed out after 5 minutes.');
   }
 }

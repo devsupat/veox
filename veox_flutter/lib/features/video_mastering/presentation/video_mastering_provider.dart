@@ -32,21 +32,20 @@ class VideoMasteringState {
     String? currentStep,
     bool clearError = false,
     bool clearOutput = false,
-  }) =>
-      VideoMasteringState(
-        isProcessing: isProcessing ?? this.isProcessing,
-        logs: logs ?? this.logs,
-        outputPath: clearOutput ? null : (outputPath ?? this.outputPath),
-        error: clearError ? null : (error ?? this.error),
-        selectedPreset: selectedPreset ?? this.selectedPreset,
-        currentStep: currentStep ?? this.currentStep,
-      );
+  }) => VideoMasteringState(
+    isProcessing: isProcessing ?? this.isProcessing,
+    logs: logs ?? this.logs,
+    outputPath: clearOutput ? null : (outputPath ?? this.outputPath),
+    error: clearError ? null : (error ?? this.error),
+    selectedPreset: selectedPreset ?? this.selectedPreset,
+    currentStep: currentStep ?? this.currentStep,
+  );
 }
 
 final videoMasteringNotifierProvider =
     StateNotifierProvider<VideoMasteringNotifier, VideoMasteringState>((ref) {
-  return VideoMasteringNotifier();
-});
+      return VideoMasteringNotifier();
+    });
 
 class VideoMasteringNotifier extends StateNotifier<VideoMasteringState> {
   VideoMasteringNotifier() : super(const VideoMasteringState());
@@ -54,7 +53,8 @@ class VideoMasteringNotifier extends StateNotifier<VideoMasteringState> {
   final _svc = VideoMasteringService.instance;
   StreamSubscription<MasteringProgress>? _sub;
 
-  void setPreset(String preset) => state = state.copyWith(selectedPreset: preset);
+  void setPreset(String preset) =>
+      state = state.copyWith(selectedPreset: preset);
 
   Future<void> assemble(
     String projectId, {
@@ -77,22 +77,21 @@ class VideoMasteringNotifier extends StateNotifier<VideoMasteringState> {
           exportPreset: state.selectedPreset,
         )
         .listen(
-      (progress) {
-        final updatedLogs = progress.log != null
-            ? [...state.logs, progress.log!]
-            : state.logs;
-        state = state.copyWith(
-          logs: updatedLogs,
-          currentStep: progress.step,
-          outputPath: progress.outputPath,
-          isProcessing: progress.outputPath == null,
+          (progress) {
+            final updatedLogs = progress.log != null
+                ? [...state.logs, progress.log!]
+                : state.logs;
+            state = state.copyWith(
+              logs: updatedLogs,
+              currentStep: progress.step,
+              outputPath: progress.outputPath,
+              isProcessing: progress.outputPath == null,
+            );
+          },
+          onError: (Object e) {
+            state = state.copyWith(isProcessing: false, error: e.toString());
+          },
         );
-      },
-      onError: (Object e) {
-        state =
-            state.copyWith(isProcessing: false, error: e.toString());
-      },
-    );
   }
 
   void cancel() {

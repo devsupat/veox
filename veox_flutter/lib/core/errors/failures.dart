@@ -31,7 +31,7 @@ final class AuthFailure extends Failure {
 /// A required local executable (node, ffmpeg, yt-dlp) is not in PATH.
 final class MissingToolFailure extends Failure {
   const MissingToolFailure(this.tool)
-      : super('Required tool "$tool" not found in PATH.');
+    : super('Required tool "$tool" not found in PATH.');
   final String tool;
 
   @override
@@ -40,12 +40,26 @@ final class MissingToolFailure extends Failure {
 
 /// A subprocess exited with a non-zero exit code.
 final class ProcessFailure extends Failure {
-  const ProcessFailure(super.message, {this.exitCode, this.stderr});
+  const ProcessFailure(
+    super.message, {
+    this.exitCode,
+    this.stderr,
+    this.retryable = true,
+    this.errorCategory,
+  });
   final int? exitCode;
   final String? stderr;
+  final bool retryable;
+  final String? errorCategory;
 
   @override
-  List<Object?> get props => [message, exitCode, stderr];
+  List<Object?> get props => [
+    message,
+    exitCode,
+    stderr,
+    retryable,
+    errorCategory,
+  ];
 }
 
 /// A file or directory operation failed (read, write, not found).

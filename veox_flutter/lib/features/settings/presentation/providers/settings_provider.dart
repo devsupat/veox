@@ -32,19 +32,15 @@ class ProviderKeyState {
     TestStatus? testStatus,
     String? testDetail,
     bool clearMaskedKey = false,
-  }) =>
-      ProviderKeyState(
-        maskedKey: clearMaskedKey ? null : (maskedKey ?? this.maskedKey),
-        testStatus: testStatus ?? this.testStatus,
-        testDetail: testDetail ?? this.testDetail,
-      );
+  }) => ProviderKeyState(
+    maskedKey: clearMaskedKey ? null : (maskedKey ?? this.maskedKey),
+    testStatus: testStatus ?? this.testStatus,
+    testDetail: testDetail ?? this.testDetail,
+  );
 }
 
 class SettingsState {
-  const SettingsState({
-    this.keys = const {},
-    this.isLoading = false,
-  });
+  const SettingsState({this.keys = const {}, this.isLoading = false});
 
   final Map<ApiProvider, ProviderKeyState> keys;
   final bool isLoading;
@@ -52,11 +48,10 @@ class SettingsState {
   SettingsState copyWith({
     Map<ApiProvider, ProviderKeyState>? keys,
     bool? isLoading,
-  }) =>
-      SettingsState(
-        keys: keys ?? this.keys,
-        isLoading: isLoading ?? this.isLoading,
-      );
+  }) => SettingsState(
+    keys: keys ?? this.keys,
+    isLoading: isLoading ?? this.isLoading,
+  );
 
   ProviderKeyState stateFor(ApiProvider p) =>
       keys[p] ?? const ProviderKeyState();
@@ -68,8 +63,8 @@ class SettingsState {
 
 final settingsNotifierProvider =
     StateNotifierProvider<SettingsNotifier, SettingsState>(
-  (ref) => SettingsNotifier(),
-);
+      (ref) => SettingsNotifier(),
+    );
 
 class SettingsNotifier extends StateNotifier<SettingsState> {
   SettingsNotifier() : super(const SettingsState()) {

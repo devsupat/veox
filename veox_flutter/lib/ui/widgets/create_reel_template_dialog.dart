@@ -7,7 +7,8 @@ class CreateReelTemplateDialog extends StatefulWidget {
   const CreateReelTemplateDialog({super.key, required this.onSave});
 
   @override
-  State<CreateReelTemplateDialog> createState() => _CreateReelTemplateDialogState();
+  State<CreateReelTemplateDialog> createState() =>
+      _CreateReelTemplateDialogState();
 }
 
 class _CreateReelTemplateDialogState extends State<CreateReelTemplateDialog> {
@@ -45,7 +46,10 @@ class _CreateReelTemplateDialogState extends State<CreateReelTemplateDialog> {
                 decoration: const InputDecoration(
                   hintText: "Template Name",
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ),
@@ -60,21 +64,28 @@ class _CreateReelTemplateDialogState extends State<CreateReelTemplateDialog> {
               ],
             ),
             Container(height: 1, color: Colors.grey.shade300),
-            
+
             const SizedBox(height: 16),
 
             // Tab Content
             if (_activeTab == "YouTube Analyze") ...[
-               Text(
+              Text(
                 "Paste a YouTube link. We'll extract the title, description, and transcript (if available) to analyze the style.",
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 16),
-              
-              _buildInputWithIcon(LucideIcons.link, "YouTube Video URL", _urlController),
+
+              _buildInputWithIcon(
+                LucideIcons.link,
+                "YouTube Video URL",
+                _urlController,
+              ),
               const SizedBox(height: 12),
-              _buildInput("Additional Instructions (optional)", _instructionsController),
-              
+              _buildInput(
+                "Additional Instructions (optional)",
+                _instructionsController,
+              ),
+
               const SizedBox(height: 24),
               Center(
                 child: OutlinedButton.icon(
@@ -84,16 +95,24 @@ class _CreateReelTemplateDialogState extends State<CreateReelTemplateDialog> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF4B5563),
                     side: BorderSide(color: Colors.grey.shade300),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
                 ),
               ),
-            ] else 
+            ] else
               SizedBox(
                 height: 150,
                 child: Center(
-                  child: Text("Content for $_activeTab", style: const TextStyle(color: Colors.grey)),
+                  child: Text(
+                    "Content for $_activeTab",
+                    style: const TextStyle(color: Colors.grey),
+                  ),
                 ),
               ),
 
@@ -105,7 +124,9 @@ class _CreateReelTemplateDialogState extends State<CreateReelTemplateDialog> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey.shade600,
+                  ),
                   child: const Text("Cancel"),
                 ),
                 const SizedBox(width: 12),
@@ -121,10 +142,18 @@ class _CreateReelTemplateDialogState extends State<CreateReelTemplateDialog> {
                     foregroundColor: Colors.grey.shade800,
                     elevation: 0,
                     side: BorderSide(color: Colors.grey.shade300),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  child: const Text("Save Template", style: TextStyle(fontWeight: FontWeight.w600)),
+                  child: const Text(
+                    "Save Template",
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ),
               ],
             ),
@@ -163,7 +192,11 @@ class _CreateReelTemplateDialogState extends State<CreateReelTemplateDialog> {
     );
   }
 
-  Widget _buildInputWithIcon(IconData icon, String hint, TextEditingController controller) {
+  Widget _buildInputWithIcon(
+    IconData icon,
+    String hint,
+    TextEditingController controller,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
@@ -205,7 +238,10 @@ class _CreateReelTemplateDialogState extends State<CreateReelTemplateDialog> {
         decoration: InputDecoration(
           hintText: hint,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 14,
+          ),
         ),
       ),
     );

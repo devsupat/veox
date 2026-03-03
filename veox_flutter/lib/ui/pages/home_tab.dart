@@ -8,13 +8,20 @@ import 'package:veox_flutter/features/automation/models/automation_state.dart';
 import 'package:veox_flutter/features/automation/services/settings_service.dart';
 import 'package:veox_flutter/features/workflows/providers/home_workflow_provider.dart';
 
+import 'dart:convert';
 import 'dart:io';
+import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:uuid/uuid.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:veox_flutter/features/history/providers/scene_history_provider.dart';
 import 'package:veox_flutter/features/story/data/project_model.dart';
+import 'package:isar/isar.dart';
 import 'package:veox_flutter/core/database/isar_service.dart';
+import 'package:veox_flutter/core/database/task_model.dart';
 import 'package:veox_flutter/ui/widgets/job_queue_dialog.dart';
+import 'package:veox_flutter/features/queue/presentation/queue_provider.dart';
+import 'package:veox_flutter/core/ipc/node_service.dart';
 
 class HomeTab extends ConsumerStatefulWidget {
   const HomeTab({super.key});
@@ -114,6 +121,77 @@ class _HomeTabState extends ConsumerState<HomeTab> {
   bool _isBoost = false;
   String _upscale = "1080p"; // 1080p or 4K
 
+  // -----------------------------------------------------------
+  // Diagnostics & Browser Test
+  // -----------------------------------------------------------
+
+  Future<void> _runBrowserTest() async {
+    final node = NodeService.instance;
+    if (!node.isRunning) await node.startEngine();
+    try {
+      final result = await node.enqueueOpenBrowserTest(
+        url:
+            kFlowUrl, // Opens same URL as Login/Connect for consistent smoke-test
+        durationSeconds: 30,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Browser test done: ${result['title'] ?? result['status']}',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Browser test FAILED: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 8),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _runDoctor() async {
+    final node = NodeService.instance;
+    if (!node.isRunning) await node.startEngine();
+    try {
+      final result = await node.sendDoctor();
+      final summary = [
+        'Node: ${result['node_version']} (${result['platform']})',
+        'PW: ${result['playwright_version'] ?? 'N/A'}',
+        'Headed: ${result['canLaunchHeaded']}',
+        if ((result['errors'] as List?)?.isNotEmpty == true)
+          'Errors: ${(result['errors'] as List).join('; ')}',
+      ].join('  |  ');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(summary),
+            duration: const Duration(seconds: 10),
+            backgroundColor: (result['canLaunchHeaded'] == true)
+                ? Colors.green.shade700
+                : Colors.red.shade700,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Doctor failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   // Browser Controls
 
   @override
@@ -125,6 +203,24 @@ class _HomeTabState extends ConsumerState<HomeTab> {
     final automationNotifier = ref.read(veoAutomationProvider.notifier);
     final workflowState = ref.watch(homeWorkflowProvider);
     final workflowNotifier = ref.read(homeWorkflowProvider.notifier);
+    final queueState = ref.watch(queueNotifierProvider);
+    final queueNotifier = ref.read(queueNotifierProvider.notifier);
+    final queueStats = ref.watch(queueStatsProvider);
+
+    // Sync workflow state with automation state
+    ref.listen(veoAutomationProvider, (previous, next) {
+      if (previous?.status == AutomationStatus.busy) {
+        if (next.status == AutomationStatus.connected) {
+          workflowNotifier.completeGeneration();
+        } else if (next.status == AutomationStatus.error) {
+          workflowNotifier.failGeneration(
+            next.lastError ?? "Unknown automation error",
+          );
+        } else if (next.status == AutomationStatus.idle) {
+          workflowNotifier.reset();
+        }
+      }
+    });
 
     return Column(
       children: [
@@ -260,23 +356,29 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                               LucideIcons.play,
                               Colors.green.shade50,
                               Colors.green,
-                              () => appState.startGeneration(),
+                              queueState.isRunning
+                                  ? null
+                                  : () => queueNotifier.start(),
                             ),
                             const SizedBox(width: 8),
                             _buildControlBtn(
                               "Pause",
                               LucideIcons.pause,
-                              Colors.grey.shade100,
-                              Colors.grey,
-                              null,
+                              queueState.isRunning
+                                  ? Colors.amber.shade50
+                                  : Colors.grey.shade100,
+                              queueState.isRunning ? Colors.amber : Colors.grey,
+                              queueState.isRunning
+                                  ? () => queueNotifier.pause()
+                                  : null,
                             ),
                             const SizedBox(width: 8),
                             _buildControlBtn(
                               "Stop",
                               LucideIcons.square,
-                              Colors.grey.shade100,
-                              Colors.grey,
-                              () => appState.stopGeneration(),
+                              Colors.red.shade50,
+                              Colors.red,
+                              () => queueNotifier.stop(),
                             ),
                             const SizedBox(width: 8),
                             _buildControlBtn(
@@ -284,15 +386,15 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                               LucideIcons.refreshCw,
                               Colors.orange.shade50,
                               Colors.orange,
-                              null,
+                              () => queueNotifier.retryFailed(),
                             ),
                             const SizedBox(width: 8),
                             _buildControlBtn(
                               "Resumes",
                               LucideIcons.rotateCcw,
-                              Colors.grey.shade100,
-                              Colors.grey,
-                              null,
+                              Colors.blue.shade50,
+                              Colors.blue,
+                              () => queueNotifier.resumeAllPaused(),
                             ),
                             const SizedBox(width: 8),
                             Container(
@@ -389,25 +491,55 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                 width: 300,
                 child: Column(
                   children: [
-                    // Job Queue Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(LucideIcons.list, size: 14),
-                        label: const Text("Job Queue"),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => const JobQueueDialog(),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue.shade50,
-                          foregroundColor: Colors.blue.shade700,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                    // Job Queue Button & Stats
+                    Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(LucideIcons.list, size: 14),
+                            label: const Text("Job Queue"),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => const JobQueueDialog(),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade50,
+                              foregroundColor: Colors.blue.shade700,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildMiniCounter(
+                              "Total",
+                              queueStats.total,
+                              Colors.grey,
+                            ),
+                            _buildMiniCounter(
+                              "Active",
+                              queueStats.active,
+                              Colors.blue,
+                            ),
+                            _buildMiniCounter(
+                              "Done",
+                              queueStats.done,
+                              Colors.green,
+                            ),
+                            _buildMiniCounter(
+                              "Failed",
+                              queueStats.failed,
+                              Colors.red,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
 
@@ -552,31 +684,41 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                               // Login Button
                               InkWell(
                                 onTap: () async {
-                                  // Launch browser for manual login
-                                  await automationNotifier.launchBrowser();
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          "Browser Launched for Profile: $_currentProfile. Please login manually.",
-                                        ),
-                                      ),
-                                    );
+                                  if (automationState.status ==
+                                      AutomationStatus.pausedNeedsLogin) {
+                                    await automationNotifier.resume();
+                                  } else {
+                                    await automationNotifier.launchBrowser();
                                   }
                                 },
                                 child: _buildStatusBadge(
-                                  "Login",
-                                  Colors.orange,
+                                  automationState.status ==
+                                          AutomationStatus.pausedNeedsLogin
+                                      ? "Resume"
+                                      : "Login",
+                                  automationState.status ==
+                                          AutomationStatus.pausedNeedsLogin
+                                      ? Colors.blue
+                                      : Colors.orange,
                                 ),
                               ),
                               const SizedBox(width: 4),
                               _buildStatusBadge("ALL", Colors.green),
                               const SizedBox(width: 4),
                               IconButton(
-                                onPressed: () =>
-                                    automationNotifier.closeBrowser(),
-                                icon: const Icon(
-                                  LucideIcons.stopCircle,
+                                onPressed: () {
+                                  if (automationState.status ==
+                                      AutomationStatus.pausedNeedsLogin) {
+                                    automationNotifier.cancel();
+                                  } else {
+                                    automationNotifier.closeBrowser();
+                                  }
+                                },
+                                icon: Icon(
+                                  automationState.status ==
+                                          AutomationStatus.pausedNeedsLogin
+                                      ? LucideIcons.xCircle
+                                      : LucideIcons.stopCircle,
                                   color: Colors.red,
                                   size: 20,
                                 ),
@@ -638,6 +780,53 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 8),
+                          // Diagnostics row — smoke-test browser visibility
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _runBrowserTest,
+                                  icon: const Icon(
+                                    LucideIcons.monitor,
+                                    size: 12,
+                                  ),
+                                  label: const Text(
+                                    'Open Browser Test',
+                                    style: TextStyle(fontSize: 10),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.teal,
+                                    side: const BorderSide(color: Colors.teal),
+                                    visualDensity: VisualDensity.compact,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              OutlinedButton.icon(
+                                onPressed: _runDoctor,
+                                icon: const Icon(
+                                  LucideIcons.activity,
+                                  size: 12,
+                                ),
+                                label: const Text(
+                                  'Doctor',
+                                  style: TextStyle(fontSize: 10),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.purple,
+                                  side: const BorderSide(color: Colors.purple),
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -647,17 +836,15 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed:
-                            automationState.status == AutomationStatus.busy ||
-                                workflowState.isRunning
+                        onPressed: queueState.isRunning
                             ? null
                             : () async {
-                                if (automationState.status !=
-                                    AutomationStatus.connected) {
+                                final rawText = _promptController.text.trim();
+                                if (rawText.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
-                                        "Please connect browser first!",
+                                        'Enter at least one prompt.',
                                       ),
                                       backgroundColor: Colors.red,
                                     ),
@@ -665,64 +852,46 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                                   return;
                                 }
 
-                                final appState = context.read<AppState>();
-                                final prompt = _promptController.text;
-                                appState.addLog(
-                                  "INFO",
-                                  "Starting Generation Task...",
+                                final prompts = rawText
+                                    .split('\n')
+                                    .map((l) => l.trim())
+                                    .where((l) => l.isNotEmpty)
+                                    .toList();
+
+                                final from =
+                                    int.tryParse(_fromController.text) ?? 1;
+                                final to = int.tryParse(_toController.text);
+
+                                final appDocDir =
+                                    await getApplicationDocumentsDirectory();
+                                final outputDir = p.join(
+                                  appDocDir.path,
+                                  'VEOX',
                                 );
 
-                                final finalPrompt = prompt.isEmpty
-                                    ? "A cyberpunk character"
-                                    : prompt;
-
-                                try {
-                                  workflowNotifier.startGeneration();
-
-                                  final newScene = SceneModel()
-                                    ..sceneId = const Uuid().v4()
-                                    ..text = "User generated prompt"
-                                    ..generatedPrompt = finalPrompt
-                                    ..status = "generating"
-                                    ..index = scenes.length + 1;
-                                  appState.addLog(
-                                    "INFO",
-                                    "Saving job to history...",
-                                  );
-                                  await IsarService().saveScene(newScene);
-
-                                  await automationNotifier.executeVeoAction(
-                                    email: "user@example.com",
-                                    password: "secure_password",
-                                    profileName: _currentProfile,
-                                    action: "generate",
-                                    prompt: finalPrompt,
-                                  );
-
-                                  workflowNotifier.completeGeneration();
-
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          "Generation sequence completed!",
-                                        ),
-                                      ),
+                                final enqueued = await queueNotifier
+                                    .enqueueBulk(
+                                      prompts: prompts,
+                                      profileId: _currentProfile,
+                                      outputDir: outputDir,
+                                      from: from,
+                                      to: to,
+                                      skipDone: true,
                                     );
-                                  }
-                                } catch (e) {
-                                  workflowNotifier.failGeneration(e.toString());
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text("Automation Error: $e"),
-                                        backgroundColor: Colors.red,
+
+                                await queueNotifier.start();
+
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Enqueued $enqueued task(s). Queue started.',
                                       ),
-                                    );
-                                  }
+                                    ),
+                                  );
                                 }
                               },
-                        icon: automationState.status == AutomationStatus.busy
+                        icon: queueState.isRunning
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
@@ -733,14 +902,12 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                               )
                             : const Icon(LucideIcons.sparkles, size: 16),
                         label: Text(
-                          workflowState.isRunning
-                              ? "Engine Running..."
-                              : automationState.status == AutomationStatus.busy
-                              ? "Generating..."
-                              : "Generate",
+                          queueState.isRunning
+                              ? 'Running (${queueStats.active} active)...'
+                              : 'Generate',
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981), // Green
+                          backgroundColor: const Color(0xFF10B981),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           textStyle: const TextStyle(
@@ -885,6 +1052,22 @@ class _HomeTabState extends ConsumerState<HomeTab> {
     );
   }
 
+  Widget _buildMiniCounter(String label, int count, Color color) {
+    return Column(
+      children: [
+        Text(
+          count.toString(),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+      ],
+    );
+  }
+
   Widget _buildToggleBtn(
     String label,
     bool isSelected,
@@ -1014,20 +1197,113 @@ class _HomeTabState extends ConsumerState<HomeTab> {
 
   Future<void> _handleExport() async {
     final path = await FilePicker.platform.saveFile(
-      dialogTitle: 'Save Output As',
-      fileName: 'veo_output_${DateTime.now().millisecondsSinceEpoch}.mp4',
+      dialogTitle: 'Export Project ZIP',
+      fileName: 'veox_export_${DateTime.now().millisecondsSinceEpoch}.zip',
     );
-    if (path != null) {
-      final file = File(path);
-      await file.writeAsString("DUMMY VIDEO CONTENT");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Exported to $path"),
-            backgroundColor: Colors.green,
-          ),
+    if (path == null) return;
+
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final projectDir = Directory(p.join(appDocDir.path, 'VEOX'));
+    final archive = Archive();
+
+    // 1. Collect videos/
+    final videosDir = Directory(p.join(projectDir.path, 'videos'));
+    if (videosDir.existsSync()) {
+      for (final file
+          in videosDir.listSync(recursive: true).whereType<File>()) {
+        final relativePath = p.relative(file.path, from: projectDir.path);
+        archive.addFile(
+          ArchiveFile(relativePath, file.lengthSync(), file.readAsBytesSync()),
         );
       }
+    }
+
+    // 2. Collect debug/
+    final debugDir = Directory(p.join(projectDir.path, 'debug'));
+    if (debugDir.existsSync()) {
+      for (final file in debugDir.listSync(recursive: true).whereType<File>()) {
+        final relativePath = p.relative(file.path, from: projectDir.path);
+        archive.addFile(
+          ArchiveFile(relativePath, file.lengthSync(), file.readAsBytesSync()),
+        );
+      }
+    }
+
+    // 3. Task metadata (tasks.json)
+    final isar = await IsarService().db;
+    final tasks = await isar.taskModels.where().anyId().findAll();
+    final tasksJson = jsonEncode(
+      tasks
+          .map(
+            (t) => {
+              'taskId': t.taskId,
+              'type': t.type,
+              'status': t.status,
+              'retryable': t.retryable,
+              'errorCategory': t.errorCategory,
+              'errorLog': t.errorLog,
+              'outputPath': t.outputPath,
+              'promptHash': t.promptHash,
+              'retryCount': t.retryCount,
+              'createdAt': t.createdAt.toIso8601String(),
+              'completedAt': t.completedAt?.toIso8601String(),
+            },
+          )
+          .toList(),
+    );
+    archive.addFile(
+      ArchiveFile(
+        'tasks.json',
+        utf8.encode(tasksJson).length,
+        utf8.encode(tasksJson),
+      ),
+    );
+
+    // 4. Prompts (prompts.json) — extracted from payloads
+    final promptsList = tasks
+        .where((t) => t.type == 'browser_generate_video')
+        .map((t) {
+          try {
+            final payload = jsonDecode(t.payloadJson) as Map<String, dynamic>;
+            return payload['prompt'] as String? ?? '';
+          } catch (_) {
+            return '';
+          }
+        })
+        .where((p) => p.isNotEmpty)
+        .toList();
+    final promptsJson = jsonEncode(promptsList);
+    archive.addFile(
+      ArchiveFile(
+        'prompts.json',
+        utf8.encode(promptsJson).length,
+        utf8.encode(promptsJson),
+      ),
+    );
+
+    // 5. Logs (logs.jsonl) if available
+    final logsFile = File(p.join(projectDir.path, 'logs.jsonl'));
+    if (logsFile.existsSync()) {
+      archive.addFile(
+        ArchiveFile(
+          'logs.jsonl',
+          logsFile.lengthSync(),
+          logsFile.readAsBytesSync(),
+        ),
+      );
+    }
+
+    // Write ZIP
+    final zipData = ZipEncoder().encode(archive);
+    await File(path).writeAsBytes(zipData);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Exported to $path'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 

@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final settingsServiceProvider = Provider<SettingsService>((ref) => SettingsService());
+final settingsServiceProvider = Provider<SettingsService>(
+  (ref) => SettingsService(),
+);
 
 class SettingsService {
   static const String _keyProfileName = 'veox_profile_name';

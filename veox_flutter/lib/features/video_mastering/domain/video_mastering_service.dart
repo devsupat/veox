@@ -73,14 +73,17 @@ class VideoMasteringService {
 
     if (imagePaths.isEmpty) {
       throw const FileSystemFailure(
-          'No generated images found. Run scene generation first.');
+        'No generated images found. Run scene generation first.',
+      );
     }
 
     final audioPaths = includeAudio
         ? scenes
-            .where((s) => s.audioPath != null && File(s.audioPath!).existsSync())
-            .map((s) => s.audioPath!)
-            .toList()
+              .where(
+                (s) => s.audioPath != null && File(s.audioPath!).existsSync(),
+              )
+              .map((s) => s.audioPath!)
+              .toList()
         : <String>[];
 
     final docsDir = await getApplicationDocumentsDirectory();
@@ -109,7 +112,11 @@ class VideoMasteringService {
       final mergedAudio = '${tempDir.path}/merged_audio.mp3';
       await for (final line in _runner.stream(
         'ffmpeg',
-        FFmpegCommandBuilder.concatenate(audioPaths, mergedAudio, reEncode: true),
+        FFmpegCommandBuilder.concatenate(
+          audioPaths,
+          mergedAudio,
+          reEncode: true,
+        ),
       )) {
         yield MasteringProgress(step: 'Merging audio…', log: line);
       }
@@ -137,13 +144,19 @@ class VideoMasteringService {
 
     // Step 4: Export with preset
     final outputPath = '${outputDir.path}/${const Uuid().v4()}.mp4';
-    yield MasteringProgress(step: 'Exporting final video (${exportPreset ?? '1080p'})…');
+    yield MasteringProgress(
+      step: 'Exporting final video (${exportPreset ?? '1080p'})…',
+    );
 
     List<String> exportArgs;
     if (exportPreset == '9:16 Reel') {
       exportArgs = FFmpegCommandBuilder.exportReel(finalVideo, outputPath);
     } else if (exportPreset == '4K') {
-      exportArgs = FFmpegCommandBuilder.upscale(finalVideo, outputPath, scale: 2);
+      exportArgs = FFmpegCommandBuilder.upscale(
+        finalVideo,
+        outputPath,
+        scale: 2,
+      );
     } else {
       // Default: copy without re-encoding if codecs match, else fast encode
       exportArgs = ['-y', '-i', finalVideo, '-c', 'copy', outputPath];
@@ -177,13 +190,18 @@ class VideoMasteringService {
     return outputPath;
   }
 
-  Future<String?> extractThumbnail(String videoPath, {double atSeconds = 1.0}) async {
+  Future<String?> extractThumbnail(
+    String videoPath, {
+    double atSeconds = 1.0,
+  }) async {
     final docsDir = await getApplicationDocumentsDirectory();
     final out = '${docsDir.path}/VEOX/thumbnails/${const Uuid().v4()}.jpg';
     Directory(out).parent.createSync(recursive: true);
     try {
       await _runBlocking(
-          'ffmpeg', FFmpegCommandBuilder.extractThumbnail(videoPath, out));
+        'ffmpeg',
+        FFmpegCommandBuilder.extractThumbnail(videoPath, out),
+      );
       return out;
     } catch (e) {
       AppLogger.warn('Thumbnail extraction failed: $e', tag: 'Mastering');
@@ -196,8 +214,11 @@ class VideoMasteringService {
   Future<void> _runBlocking(String exe, List<String> args) async {
     final result = await _runner.run(exe, args);
     if (!result.succeeded) {
-      throw ProcessFailure('$exe failed', exitCode: result.exitCode,
-          stderr: result.stderr);
+      throw ProcessFailure(
+        '$exe failed',
+        exitCode: result.exitCode,
+        stderr: result.stderr,
+      );
     }
   }
 

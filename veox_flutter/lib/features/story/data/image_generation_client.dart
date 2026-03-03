@@ -18,7 +18,6 @@ import 'package:uuid/uuid.dart';
 
 import 'package:veox_flutter/core/errors/failures.dart';
 import 'package:veox_flutter/core/network/dio_client.dart';
-import 'package:veox_flutter/core/storage/secure_storage_service.dart';
 import 'package:veox_flutter/core/utils/logger.dart';
 
 // ---------------------------------------------------------------------------
@@ -62,71 +61,21 @@ class ImageGenerationClient {
 
   // ── Replicate ──────────────────────────────────────────────────────────────
 
-  /// Submits a prediction to Replicate, polls until complete, and returns
-  /// the image URL.
+  /// Submits a prediction to Replicate. Stubbed for VEOX Offline-First.
   Future<String> generateViaReplicate(ImageGenRequest req) async {
-    final client = await DioClient.instance.getClient(ApiProvider.replicate);
-
-    // Step 1: create prediction
-    final createResponse = await client.post('/predictions', data: {
-      'version': _replicateModel,
-      'input': {
-        'prompt': req.prompt,
-        if (req.negativePrompt != null) 'negative_prompt': req.negativePrompt,
-        if (req.seed != null) 'seed': req.seed,
-        'width': req.width,
-        'height': req.height,
-        'num_inference_steps': req.steps,
-        'guidance_scale': req.cfgScale,
-        if (req.referenceImageBase64 != null)
-          'image': 'data:image/png;base64,${req.referenceImageBase64}',
-      },
-    });
-
-    final predictionId = _extractId(createResponse.data);
-    AppLogger.info('Replicate prediction $predictionId created.', tag: 'ImageGen');
-
-    // Step 2: poll
-    return _pollReplicatePrediction(client, predictionId);
-  }
-
-  Future<String> _pollReplicatePrediction(Dio client, String predictionId) async {
-    final deadline = DateTime.now().add(_maxPollDuration);
-
-    while (DateTime.now().isBefore(deadline)) {
-      await Future<void>.delayed(_pollInterval);
-
-      final response = await client.get('/predictions/$predictionId');
-      final data = response.data as Map<String, dynamic>;
-      final status = data['status'] as String;
-
-      AppLogger.debug('Replicate [$predictionId] status: $status', tag: 'ImageGen');
-
-      switch (status) {
-        case 'succeeded':
-          final output = data['output'];
-          if (output is List && output.isNotEmpty) {
-            return output.first as String;
-          }
-          throw const ParseFailure('Replicate returned empty output list.');
-
-        case 'failed':
-        case 'canceled':
-          final errorMsg = data['error'] ?? 'Prediction $status.';
-          throw NetworkFailure('Replicate prediction $status: $errorMsg');
-      }
-      // status is 'starting' or 'processing' — keep polling
-    }
-
-    throw const NetworkFailure(
-        'Replicate prediction timed out after 10 minutes.');
+    AppLogger.info('VEOX: Mocking Replicate (Offline Mode)', tag: 'ImageGen');
+    await Future<void>.delayed(const Duration(seconds: 2));
+    // Provide a valid dummy image URL for UI testing.
+    return 'https://raw.githubusercontent.com/flutter/website/main/src/assets/images/docs/ui/layout/row-col.png';
   }
 
   // ── Local Stable Diffusion WebUI ──────────────────────────────────────────
 
   /// Sends a txt2img request to a locally running SD WebUI instance.
-  Future<String> generateViaLocalSD(ImageGenRequest req,
-      {String baseUrl = 'http://localhost:7860'}) async {
+  Future<String> generateViaLocalSD(
+    ImageGenRequest req, {
+    String baseUrl = 'http://localhost:7860',
+  }) async {
     final plain = DioClient.instance.plain;
 
     try {
@@ -152,7 +101,8 @@ class ImageGenerationClient {
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionError) {
         throw const NetworkFailure(
-            'SD WebUI not running. Start it with: ./webui.sh');
+          'SD WebUI not running. Start it with: ./webui.sh',
+        );
       }
       rethrow;
     }
@@ -165,8 +115,7 @@ class ImageGenerationClient {
   Future<String> downloadAndSave(String url, {String? subfolder}) async {
     final plain = DioClient.instance.plain;
     final docsDir = await getApplicationDocumentsDirectory();
-    final dir = Directory(
-        '${docsDir.path}/VEOX/${subfolder ?? 'images'}');
+    final dir = Directory('${docsDir.path}/VEOX/${subfolder ?? 'images'}');
     if (!dir.existsSync()) dir.createSync(recursive: true);
 
     final filename = '${const Uuid().v4()}.png';
@@ -185,8 +134,7 @@ class ImageGenerationClient {
   }
 
   /// Saves a base64-encoded PNG to disk. Used for SD WebUI results.
-  Future<String> saveBase64Image(String base64Data,
-      {String? subfolder}) async {
+  Future<String> saveBase64Image(String base64Data, {String? subfolder}) async {
     final docsDir = await getApplicationDocumentsDirectory();
     final dir = Directory('${docsDir.path}/VEOX/${subfolder ?? 'images'}');
     if (!dir.existsSync()) dir.createSync(recursive: true);

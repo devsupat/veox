@@ -60,8 +60,9 @@ class TtsService {
     required String voiceId,
   }) async {
     AppLogger.info(
-        'TTS for scene ${scene.index}: "${scene.text.substring(0, scene.text.length.clamp(0, 60))}…"',
-        tag: 'TTS');
+      'TTS for scene ${scene.index}: "${scene.text.substring(0, scene.text.length.clamp(0, 60))}…"',
+      tag: 'TTS',
+    );
 
     final bytes = await _generateBytes(scene.text, voiceId);
     final filename = 'scene_${scene.index}_${scene.sceneId}.mp3';
@@ -92,13 +93,22 @@ class TtsService {
       try {
         final path = await generateVoiceForScene(scene, voiceId: voiceId);
         yield VoiceProgress(
-            sceneIndex: scene.index, total: total, audioPath: path);
+          sceneIndex: scene.index,
+          total: total,
+          audioPath: path,
+        );
       } catch (e) {
-        AppLogger.error('TTS failed for scene ${scene.index}',
-            tag: 'TTS', error: e);
+        AppLogger.error(
+          'TTS failed for scene ${scene.index}',
+          tag: 'TTS',
+          error: e,
+        );
         // Yield partial progress; caller decides whether to stop or continue
         yield VoiceProgress(
-            sceneIndex: scene.index, total: total, audioPath: '');
+          sceneIndex: scene.index,
+          total: total,
+          audioPath: '',
+        );
       }
     }
   }
@@ -133,20 +143,26 @@ class TtsService {
     final request = await httpClient.getUrl(Uri.parse(musicUrl));
     final response = await request.close();
     final bytes = Uint8List.fromList(
-        await response.reduce((a, b) => [...a, ...b]));
+      await response.reduce((a, b) => [...a, ...b]),
+    );
     httpClient.close();
 
-    return _elClient.saveAudio(bytes, filename: 'music_${DateTime.now().millisecondsSinceEpoch}.mp3');
+    return _elClient.saveAudio(
+      bytes,
+      filename: 'music_${DateTime.now().millisecondsSinceEpoch}.mp3',
+    );
   }
 
   // ── Internals ─────────────────────────────────────────────────────────────
 
   Future<Uint8List> _generateBytes(String text, String voiceId) async {
-    final hasElevenLabs =
-        await SecureStorageService.instance.hasKey(ApiProvider.elevenlabs);
+    final hasElevenLabs = await SecureStorageService.instance.hasKey(
+      ApiProvider.elevenlabs,
+    );
     if (!hasElevenLabs) {
       throw const AuthFailure(
-          'No ElevenLabs key. Add it in Settings to use TTS.');
+        'No ElevenLabs key. Add it in Settings to use TTS.',
+      );
     }
     return _elClient.generateSpeech(text, voiceId);
   }

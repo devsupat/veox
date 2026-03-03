@@ -45,7 +45,7 @@ class _AssignProfileDialogState extends State<AssignProfileDialog> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Profile List
             Container(
               constraints: const BoxConstraints(maxHeight: 300),
@@ -71,7 +71,10 @@ class _AssignProfileDialogState extends State<AssignProfileDialog> {
                             Expanded(
                               child: Text(
                                 profile,
-                                style: const TextStyle(fontSize: 14, color: Color(0xFF555555)),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF555555),
+                                ),
                               ),
                             ),
                             Container(
@@ -79,14 +82,22 @@ class _AssignProfileDialogState extends State<AssignProfileDialog> {
                               height: 20,
                               decoration: BoxDecoration(
                                 border: Border.all(
-                                  color: isSelected ? const Color(0xFF3B648F) : Colors.grey.shade400,
+                                  color: isSelected
+                                      ? const Color(0xFF3B648F)
+                                      : Colors.grey.shade400,
                                   width: 2,
                                 ),
                                 borderRadius: BorderRadius.circular(4),
-                                color: isSelected ? const Color(0xFF3B648F) : Colors.transparent,
+                                color: isSelected
+                                    ? const Color(0xFF3B648F)
+                                    : Colors.transparent,
                               ),
                               child: isSelected
-                                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                                  ? const Icon(
+                                      Icons.check,
+                                      size: 14,
+                                      color: Colors.white,
+                                    )
                                   : null,
                             ),
                             const SizedBox(width: 8),
@@ -98,7 +109,7 @@ class _AssignProfileDialogState extends State<AssignProfileDialog> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
 
             // Buttons
@@ -121,8 +132,13 @@ class _AssignProfileDialogState extends State<AssignProfileDialog> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF3B648F), // Dark blue
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                     elevation: 0,
                   ),
                   child: const Text("Save"),

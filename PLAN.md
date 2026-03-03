@@ -1,207 +1,107 @@
-# PLAN.md — AI Creative Studio (Flutter Desktop)
-
-## 🎯 Tujuan Proyek
-Menghidupkan Flutter Desktop App yang sudah memiliki UI lengkap menjadi aplikasi fungsional penuh, dengan backend logic untuk:
-- AI Image Generation (Character + Scene)
-- YouTube Clone via transcript scraping
-- AI Voice & Music generation
-- Video assembly & mastering
-- Headless browser automation (Veo3/Grok via Google Labs)
 
 ---
 
-## 📅 Development Phases
+# 2) PLAN.md (REPLACE FULL FILE)
 
-### PHASE 1 — Foundation & State Management (Week 1)
-**Goal:** Setup arsitektur, dependency injection, dan state management seluruh modul.
+```md
+# PLAN.md — VEOX (Make UI “Alive”)
 
-- [ ] Setup `Riverpod` atau `Bloc` sebagai state manager global
-- [ ] Setup `Hive` atau `Isar` untuk local database (projects, scenes, characters)
-- [ ] Setup `dio` + interceptor untuk HTTP client (API calls)
-- [ ] Setup `flutter_secure_storage` untuk menyimpan API keys
-- [ ] Buat `AppRouter` dengan `go_router`
-- [ ] Buat `SettingsService` untuk manage Google/API credentials
-- [ ] Buat model data: `Project`, `Character`, `Scene`, `Prompt`, `VideoAsset`
-
-**Deliverable:** App bisa menyimpan/load project, settings tersimpan persistent.
+## 0) Objective
+Turn the already-built Flutter Desktop UI into a functional **offline-first automation product**:
+- One-click bulk tasks (“1 click = many jobs”)
+- Local queue with retries & pause/resume
+- Node Playwright automation engine
+- Deterministic downloads and outputs
+- Zero paid APIs
 
 ---
 
-### PHASE 2 — Character Studio (Week 2)
-**Goal:** Generate karakter dengan konsistensi seed/reference image.
-
-- [ ] Integrasi **Stable Diffusion API** (via `stable-diffusion-webui` REST atau Replicate API)
-  - Endpoint: `/sdapi/v1/txt2img` dengan parameter `seed` tetap
-  - Support `ControlNet` untuk reference image consistency
-- [ ] Integrasi **Replicate API** sebagai alternatif (model: `stability-ai/sdxl`)
-- [ ] UI logic: tombol Generate → call API → tampilkan hasil di grid
-- [ ] Fitur seed lock: simpan seed per karakter
-- [ ] Fitur reference image: upload gambar → encode base64 → kirim sebagai `init_image`
-- [ ] Simpan karakter ke local DB dengan thumbnail
-
-**Service:** `CharacterService`, `ImageGenerationService`
+## 1) Hard Constraints
+- No paid APIs; no server.
+- Runs on low-end devices; browser concurrency default = 1.
+- Debuggable: logs, deterministic output paths, replayable tasks.
+- Policy-safe: no gray-area automation; user consent; avoid ToS violations.
 
 ---
 
-### PHASE 3 — Scene Builder (Week 2-3)
-**Goal:** Teks cerita → JSON scenes → visual prompts → generate gambar per scene.
-
-- [ ] Integrasi **Claude API** atau **OpenAI GPT-4** untuk:
-  - Parse teks cerita → ekstrak karakter
-  - Generate visual prompt per scene (format sinematik)
-  - Output: JSON `{scene_number, description, characters[], prompt, camera_angle}`
-- [ ] Auto-detect karakter di setiap scene → match dengan Character Studio
-- [ ] Generate semua scene sekaligus (parallel API calls dengan `Future.wait`)
-- [ ] Drag & drop karakter ke scene untuk replace
-- [ ] Import gambar eksternal sebagai scene asset
-- [ ] Regenerate scene individual
-
-**Service:** `SceneBuilderService`, `LLMService`, `PromptParserService`
+## 2) Scope Mapping to Current UI Tabs (Keep UI, Wire Logic)
+- **Home**: projects list, recent outputs, queue summary, multi-browser status
+- **Character Studio**: prompt/template builder → generates JSON payloads (offline)
+- **Scene Builder**: parse JSON → create scenes → create tasks in queue
+- **Clone YouTube**: safest implementation first (manual transcript import / user-provided data)
+- **Mastering / Reels / AV Match**: local processing pipelines (ffmpeg placeholders first)
+- **Settings**: output dirs, profiles, concurrency, debug toggles
+- **Export**: zip/export project outputs + logs
 
 ---
 
-### PHASE 4 — YouTube Clone (Week 3)
-**Goal:** URL YouTube → transkrip → prompts → generate ulang konten.
+## 3) Phased Roadmap (Execution Order)
 
-- [ ] Integrasi **YouTube Transcript API** (via `youtube_transcript_api` Python bridge atau REST wrapper)
-  - Alternatif: `yt-dlp` untuk download subtitle
-  - Gunakan `dart:io` `Process.run` untuk eksekusi yt-dlp
-- [ ] Parse transkrip → kirim ke LLM → generate visual prompts
-- [ ] Extract thumbnail/keyframe dari video (opsional, via ffmpeg)
-- [ ] Copy prompts ke clipboard / kirim ke Home Screen
-- [ ] Load scenes otomatis dari prompts hasil clone
+### Phase 0 — Repo Hygiene & Contracts (1–2 days)
+Deliverables:
+- Rewrite docs to VEOX (ARCHITECTURE/PLAN/README/CURSOR_PROMPTS)
+- Define IPC message contract (request/response/events)
+- Remove/disable old “paid API” assumptions from codepaths
 
-**Service:** `YouTubeCloneService`, `TranscriptService`
+### Phase 1 — Storage & Queue Foundation (2–4 days)
+Deliverables:
+- Isar collections for: Project, Scene, Task, LogEntry, Profile
+- TaskQueueService:
+  - concurrency limit (browser pool = 1)
+  - retry w/ exponential backoff + jitter
+  - pause/resume/cancel
+  - idempotent output logic
+- UI wiring:
+  - status counters update from actual tasks (Total/Done/Active/Failed)
+  - “Processing Queue” panel reflects real queue states
 
----
+### Phase 2 — Node Engine Hardening + Minimal Workflow (2–4 days)
+Deliverables:
+- Node router supports:
+  - job_start / job_cancel
+  - event streaming (progress/log/needs_login)
+- Minimal “golden path” workflow:
+  - open browser profile
+  - navigate to website
+  - detect login
+  - take screenshot
+  - return output path
+- Flutter wiring:
+  - engine connect/disconnect status
+  - login-required UX (button opens interactive browser)
 
-### PHASE 5 — Headless Browser Automation (Week 3-4)
-**Goal:** Auto-login dan generate via Veo3 (Google Labs) & Grok.
+### Phase 3 — Bulk Generation Workflow (3–7 days)
+Deliverables:
+- Implement 1 platform workflow end-to-end (stable):
+  - prompt → generate → poll → download atomic
+- Scene Builder creates tasks in bulk:
+  - from range (From/To)
+  - batch size
+  - skip mode
+- Progress reporting per task + global progress bar
 
-- [ ] Embed **`webview_flutter`** atau launch external Chromium via `puppeteer` (Node.js subprocess)
-- [ ] Strategi: Flutter spawn Node.js process yang jalankan Puppeteer script
-  - Script: auto-login Google → navigate ke labs.google.com/veo → inject prompt → trigger generate → polling result
-- [ ] Alternatif ringan: `flutter_inappwebview` + JavaScript injection
-- [ ] Untuk Grok: navigate ke `x.ai/grok` → inject prompt via JS
-- [ ] Simpan session cookies untuk re-use login
-- [ ] Queue system: antrian prompt → generate satu per satu otomatis
-- [ ] Status monitoring: polling setiap N detik untuk cek hasil
+### Phase 4 — Quality & Reliability (3–7 days)
+Deliverables:
+- Download manager improvements
+- Robust selector strategy + timeouts
+- Better error classification:
+  - retryable vs non-retryable
+- Export:
+  - export project outputs + JSON + logs
+- Performance hardening for low-end machines
 
-**Service:** `BrowserAutomationService`, `Veo3Service`, `GrokService`
-
----
-
-### PHASE 6 — AI Voice & Music (Week 4)
-**Goal:** TTS unlimited + background music generator.
-
-- [ ] Integrasi **ElevenLabs API** untuk TTS
-  - Endpoint: `POST /v1/text-to-speech/{voice_id}`
-  - Voice cloning support
-- [ ] Alternatif TTS: **OpenAI TTS API** (`tts-1` model)
-- [ ] Integrasi **Suno API** atau **Udio API** untuk music generation
-  - Atau: **MusicGen** via Replicate
-- [ ] Bulk generation: generate voice untuk semua scenes sekaligus
-- [ ] Audio player preview in-app
-- [ ] Export audio files ke folder project
-
-**Service:** `TTSService`, `MusicGenerationService`, `AudioPlayerService`
-
----
-
-### PHASE 7 — Video Mastering (Week 5)
-**Goal:** Gabungkan gambar/video + audio + logo → export video final.
-
-- [ ] Integrasi **`ffmpeg`** via `flutter_ffmpeg` atau `ffmpeg_kit_flutter`
-  - Gabungkan image sequence → video
-  - Overlay audio track
-  - Burn subtitle/text overlay
-  - Add logo watermark
-- [ ] Import video clips dari file system
-- [ ] Generate background music untuk video (auto-detect scene dari metadata)
-- [ ] Simple timeline editor (drag reorder clips)
-- [ ] Export preset: 1080p, 4K, Reels (9:16), YouTube (16:9)
-- [ ] Bulk upscale via **Real-ESRGAN** (Replicate API atau local)
-
-**Service:** `VideoMasteringService`, `FFmpegService`, `UpscalerService`
+### Phase 5 — Packaging Windows/macOS (timeboxed)
+Deliverables:
+- Standard build steps
+- Bundle engine assets / configure pathing
+- Smoke tests checklist
 
 ---
 
-### PHASE 8 — Reels & Bulk Export (Week 5-6)
-**Goal:** Template-based bulk reel creator.
-
-- [ ] Template system: simpan konfigurasi reusable (aspect ratio, music, logo, font)
-- [ ] Bulk create: apply template ke multiple scenes
-- [ ] One-click export semua video
-- [ ] Progress tracking per video
-- [ ] Output folder manager
-
----
-
-### PHASE 9 — Polish & Integration (Week 6)
-- [ ] Error handling menyeluruh + retry logic
-- [ ] Progress indicators semua long-running tasks
-- [ ] Notification saat generate selesai
-- [ ] API key validator di settings
-- [ ] Log viewer untuk debug automation
-- [ ] Auto-save project state
-
----
-
-## 🔑 API Keys yang Dibutuhkan
-| Service | Provider | Keterangan |
-|---|---|---|
-| Image Generation | Replicate / SD WebUI | Character & Scene |
-| LLM (Story Parse) | OpenAI / Anthropic | Scene Builder |
-| TTS | ElevenLabs / OpenAI | Voice generation |
-| Music | Suno / Replicate MusicGen | Background music |
-| Video Upscale | Replicate Real-ESRGAN | Bulk upscale |
-| YouTube | yt-dlp (local tool) | Transcript clone |
-| Browser Auto | Puppeteer/Node.js (local) | Veo3 & Grok |
-
----
-
-## 📦 Dependency List (pubspec.yaml additions)
-```yaml
-dependencies:
-  # State Management
-  flutter_riverpod: ^2.5.1
-  riverpod_annotation: ^2.3.5
-  
-  # Navigation
-  go_router: ^13.2.0
-  
-  # HTTP & API
-  dio: ^5.4.3
-  retrofit: ^4.1.0
-  
-  # Local Storage
-  isar: ^3.1.0
-  isar_flutter_libs: ^3.1.0
-  flutter_secure_storage: ^9.0.0
-  
-  # File & Media
-  file_picker: ^8.0.0
-  path_provider: ^2.1.3
-  ffmpeg_kit_flutter: ^6.0.3
-  
-  # WebView & Browser
-  flutter_inappwebview: ^6.0.0
-  
-  # Audio
-  just_audio: ^0.9.39
-  audioplayers: ^6.0.0
-  
-  # Image
-  image: ^4.1.7
-  cached_network_image: ^3.3.1
-  
-  # Utils
-  uuid: ^4.4.0
-  intl: ^0.19.0
-  logger: ^2.3.0
-  
-dev_dependencies:
-  riverpod_generator: ^2.3.11
-  build_runner: ^2.4.9
-  retrofit_generator: ^8.1.0
-```
+## 4) Definition of Done (MVP)
+- User can create/open a project
+- Paste prompts/JSON → scenes created
+- Click Generate → tasks queued and executed
+- Browser opens with profile; login handled; downloads saved to deterministic paths
+- UI shows real progress, tasks history, and logs
+- Works without paid APIs and without server

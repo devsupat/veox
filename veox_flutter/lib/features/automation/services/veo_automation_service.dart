@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veox_flutter/core/utils/logger.dart';
-import 'package:veox_flutter/core/errors/failures.dart';
 import 'package:veox_flutter/core/database/isar_service.dart';
+import 'package:veox_flutter/features/queue/domain/queue_service.dart';
 import '../models/automation_state.dart';
 import 'automation_bridge_service.dart';
 import 'settings_service.dart';
 import 'credential_service.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 /// Service responsible for orchestrating Veo automation workflows.
 /// Follows SOLID principles by delegating low-level process management to [AutomationBridgeService].
@@ -16,52 +19,84 @@ final veoAutomationProvider =
       final settings = ref.watch(settingsServiceProvider);
       final credentials = ref.watch(credentialServiceProvider);
       final isar = IsarService(); // Singleton
-      return VeoAutomationService(bridge, settings, credentials, isar);
+      final queue = QueueService.instance;
+      return VeoAutomationService(bridge, settings, credentials, isar, queue);
     });
 
 class VeoAutomationService extends StateNotifier<AutomationState> {
+  /// Canonical target URL for browser automation.
+  /// All launch / resume / recovery paths use this constant.
+  static const _kFlowUrl = 'https://labs.google/fx/tools/flow';
+
   final AutomationBridgeService _bridge;
+  // ignore: unused_field
   final SettingsService _settings;
+  // ignore: unused_field
   final CredentialService _credentials;
+  // ignore: unused_field
   final IsarService _isar;
+  final QueueService _queue;
 
   VeoAutomationService(
     this._bridge,
     this._settings,
     this._credentials,
     this._isar,
+    this._queue,
   ) : super(const AutomationState()) {
     _initListeners();
   }
 
   Timer? _heartbeatTimer;
+  String? _activeTaskId;
 
   void _initListeners() {
-    _bridge.logs.listen((log) {
-      final message = log['message'] ?? '';
-      final level = log['level'] ?? 'info';
-
-      switch (level) {
-        case 'error':
-          AppLogger.error(message, tag: "NodeEngine");
-          break;
-        case 'warn':
-          AppLogger.warn(message, tag: "NodeEngine");
-          break;
-        default:
-          AppLogger.info(message, tag: "NodeEngine");
-      }
-
-      // Reactive state updates based on engine feedback
-      if (message.contains("Login sequence successful")) {
-        state = state.copyWith(
-          currentAction: "Authenticated. Navigating to Veos...",
-        );
-      }
-    });
+    // Monitor queue progress to update automation state
+    _queue.progress.listen(_handleQueueProgress);
 
     // Monitor for unexpected process termination
     _startHeartbeat();
+  }
+
+  void _handleQueueProgress(QueueProgressEvent event) {
+    if (_activeTaskId != null && event.taskId != _activeTaskId) return;
+
+    switch (event.status) {
+      case 'running':
+        state = state.copyWith(
+          status: AutomationStatus.busy,
+          currentAction: event.stage != null
+              ? "Status: ${event.stage}"
+              : "Processing...",
+        );
+        break;
+      case 'paused_needs_login':
+        state = state.copyWith(
+          status: AutomationStatus.pausedNeedsLogin,
+          currentAction: "Waiting for login...",
+        );
+        break;
+      case 'completed':
+        state = state.copyWith(
+          status: AutomationStatus.connected,
+          currentAction: "Task Completed",
+          isBrowserOpen: true,
+        );
+        break;
+      case 'failed':
+        state = state.copyWith(
+          status: AutomationStatus.error,
+          lastError: event.error,
+          currentAction: "Failed",
+        );
+        break;
+      case 'canceled':
+        state = state.copyWith(
+          status: AutomationStatus.idle,
+          currentAction: "Canceled",
+        );
+        break;
+    }
   }
 
   void _startHeartbeat() {
@@ -71,8 +106,8 @@ class VeoAutomationService extends StateNotifier<AutomationState> {
     ) async {
       if (state.isBrowserOpen && state.status != AutomationStatus.busy) {
         try {
-          // Sending a no-op or screenshot check to ensure process is alive
-          await _bridge.sendCommand('browser.screenshot', {});
+          // Sending a no-op to ensure process is alive
+          await _bridge.sendCommand('ping');
         } catch (e) {
           AppLogger.warn(
             "Heartbeat failed: $e. Triggering recovery...",
@@ -89,41 +124,54 @@ class VeoAutomationService extends StateNotifier<AutomationState> {
     await launchBrowser();
   }
 
-  /// Launches the automation engine and browser.
+  /// Launches the automation engine and browser via the Queue.
+  /// Enqueues a browser_screenshot task which effectively verifies connectivity.
   Future<void> launchBrowser() async {
-    if (state.isBrowserOpen) {
-      AppLogger.info("Browser already open", tag: "VeoAutomation");
-      return;
-    }
-
     try {
-      state = state.copyWith(
-        status: AutomationStatus.busy,
-        currentAction: "Launching Browser...",
+      final profileName = await _settings.getProfileName();
+      final docsDir = await getApplicationDocumentsDirectory();
+
+      final taskId = const Uuid().v4();
+      final expectedPath = p.join(
+        docsDir.path,
+        'VEOX',
+        'screenshots',
+        '$taskId.png',
+      );
+      _activeTaskId = taskId;
+
+      await _queue.enqueue(
+        type: 'browser_screenshot',
+        payload: {
+          'url': _kFlowUrl,
+          'profileId': profileName,
+          'outputPath': expectedPath,
+        },
+        expectedOutputPath: expectedPath,
       );
 
-      final profileName = await _settings.getProfileName();
-      await _bridge.startEngine();
-
-      await _bridge.sendCommand('browser.launch', {
-        'profileId': profileName,
-        'headless':
-            false, // Visible for transparency during development/debugging
-      });
-
       state = state.copyWith(
-        status: AutomationStatus.connected,
-        currentAction: "Browser Ready",
-        isBrowserOpen: true,
+        status: AutomationStatus.connecting,
+        currentAction: "Queuing Screenshot Task...",
       );
     } catch (e) {
-      _handleError("Launch Failed", e);
+      _handleError("Queueing Failed", e);
     }
   }
 
-  /// Orchestrates a full Veo action sequence: Launching -> Login -> Action.
-  /// If [email] or [password] are null, it attempts to fetch them from secure storage
-  /// based on the current profile in [SettingsService].
+  Future<void> resume() async {
+    if (_activeTaskId != null) {
+      await _queue.resumeTask(_activeTaskId!);
+    }
+  }
+
+  Future<void> cancel() async {
+    if (_activeTaskId != null) {
+      await _queue.cancelTask(_activeTaskId!);
+    }
+  }
+
+  /// Routes automation actions to the Queue.
   Future<void> executeVeoAction({
     String? email,
     String? password,
@@ -131,92 +179,39 @@ class VeoAutomationService extends StateNotifier<AutomationState> {
     required String action,
     String? prompt,
   }) async {
-    if (state.status == AutomationStatus.busy) {
-      AppLogger.warn("Automation is currently busy", tag: "VeoAutomation");
-      return;
-    }
+    AppLogger.info(
+      "executeVeoAction ($action) requested. Routing via Queue...",
+      tag: "VeoAutomation",
+    );
 
-    try {
-      state = state.copyWith(
-        status: AutomationStatus.busy,
-        currentAction: "Initializing Sequence...",
-        lastError: null,
+    if (action == 'generate' && prompt != null) {
+      final taskId = const Uuid().v4();
+      final docsDir = await getApplicationDocumentsDirectory();
+      final expectedPath = p.join(
+        docsDir.path,
+        'VEOX',
+        'videos',
+        '$taskId.mp4',
       );
 
-      // 1. Resolve Credentials
-      final targetProfile = profileName ?? await _settings.getProfileName();
-      final profileModel = await _isar.getBrowserProfileByName(targetProfile);
+      _activeTaskId = taskId;
 
-      // Load the linked google account if it exists
-      if (profileModel != null && !profileModel.googleAccount.isLoaded) {
-        await profileModel.googleAccount.load();
-      }
-
-      final effectiveEmail = email ?? profileModel?.googleAccount.value?.email;
-      final effectivePassword =
-          password ?? await _credentials.getPassword(targetProfile);
-
-      if (effectiveEmail == null || effectivePassword == null) {
-        throw AuthFailure(
-          "Missing credentials for profile: $targetProfile. Please configure in settings.",
-        );
-      }
-
-      // 2. Ensure Environment
-      if (!state.isBrowserOpen) {
-        await launchBrowser();
-      }
-
-      // 3. Authentication Flow
-      state = state.copyWith(currentAction: "Ensuring Authentication...");
-      await _bridge.sendCommand('veo.login', {
-        'email': effectiveEmail,
-        'password': effectivePassword,
-      });
-
-      // 4. Workflow Execution
-      if (action == 'generate') {
-        if (prompt == null) {
-          throw ArgumentError("Prompt is required for 'generate' action.");
-        }
-
-        state = state.copyWith(currentAction: "Sending Generation Prompt...");
-        final result = await _bridge.sendCommand('veo.generate', {
+      await _queue.enqueue(
+        type: 'browser_generate_video',
+        payload: {
           'prompt': prompt,
-        });
-
-        AppLogger.info(
-          "Prompt accepted by engine: ${result['result']}",
-          tag: "VeoAutomation",
-        );
-
-        state = state.copyWith(
-          status: AutomationStatus.connected,
-          currentAction: "Task Submitted Successfully",
-        );
-      } else if (action == 'auth_guided') {
-        state = state.copyWith(
-          currentAction: "Waiting for User Authentication...",
-        );
-        await _bridge.sendCommand('veo.auth_guided', {});
-
-        state = state.copyWith(
-          status: AutomationStatus.connected,
-          currentAction: "Authentication Verified",
-        );
-      } else {
-        throw UnimplementedError("Action '$action' is not supported yet.");
-      }
-    } catch (e) {
-      _handleError("Automation Sequence Failed", e);
-      rethrow;
+          'profileId': profileName ?? 'default',
+          'outputPath': expectedPath,
+        },
+        expectedOutputPath: expectedPath,
+      );
     }
   }
 
   /// Gracefully shuts down the browser and engine.
   Future<void> closeBrowser() async {
     try {
-      await _bridge.sendCommand('browser.close');
+      await _bridge.sendCommand('close_browser');
       await _bridge.stopEngine();
       state = state.copyWith(
         status: AutomationStatus.idle,
@@ -230,34 +225,16 @@ class VeoAutomationService extends StateNotifier<AutomationState> {
 
   void _handleError(String context, dynamic error) {
     AppLogger.error("$context: $error", tag: "VeoAutomation");
-
-    // Classify error
-    final isRetryable = _isErrorRetryable(error);
-
     state = state.copyWith(
       status: AutomationStatus.error,
       lastError: error.toString(),
-      currentAction: isRetryable ? "$context (Retryable)" : context,
+      currentAction: context,
     );
-
-    if (!isRetryable) {
-      // Potentially close browser on fatal errors to reset state
-      // closeBrowser();
-    }
   }
 
   @override
   void dispose() {
     _heartbeatTimer?.cancel();
     super.dispose();
-  }
-
-  bool _isErrorRetryable(dynamic error) {
-    if (error is AuthFailure) return false;
-    final message = error.toString().toLowerCase();
-    if (message.contains("timeout")) return true;
-    if (message.contains("network")) return true;
-    if (message.contains("navigation failed")) return true;
-    return false;
   }
 }

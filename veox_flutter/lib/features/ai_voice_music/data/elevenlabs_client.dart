@@ -11,10 +11,7 @@ import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veox_flutter/core/errors/failures.dart';
-import 'package:veox_flutter/core/network/dio_client.dart';
-import 'package:veox_flutter/core/storage/secure_storage_service.dart';
 import 'package:veox_flutter/core/utils/logger.dart';
-import 'package:dio/dio.dart';
 
 class VoiceInfo {
   const VoiceInfo({
@@ -29,11 +26,11 @@ class VoiceInfo {
   final String? category;
 
   factory VoiceInfo.fromJson(Map<String, dynamic> json) => VoiceInfo(
-        voiceId: json['voice_id'] as String,
-        name: json['name'] as String,
-        previewUrl: json['preview_url'] as String?,
-        category: json['category'] as String?,
-      );
+    voiceId: json['voice_id'] as String,
+    name: json['name'] as String,
+    previewUrl: json['preview_url'] as String?,
+    category: json['category'] as String?,
+  );
 }
 
 class ElevenLabsClient {
@@ -43,13 +40,15 @@ class ElevenLabsClient {
   // ── Voices ────────────────────────────────────────────────────────────────
 
   Future<List<VoiceInfo>> getVoices() async {
-    final client = await DioClient.instance.getClient(ApiProvider.elevenlabs);
-    final response = await client.get('/voices');
-    final voices = (response.data['voices'] as List<dynamic>)
-        .map((v) => VoiceInfo.fromJson(v as Map<String, dynamic>))
-        .toList();
-    AppLogger.info('Loaded ${voices.length} ElevenLabs voices.', tag: 'TTS');
-    return voices;
+    AppLogger.info(
+      'VEOX: Mocking ElevenLabs voices (Offline Mode)',
+      tag: 'TTS',
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    return [
+      const VoiceInfo(voiceId: 'local_male_1', name: 'Local Male (Mock)'),
+      const VoiceInfo(voiceId: 'local_female_1', name: 'Local Female (Mock)'),
+    ];
   }
 
   // ── Generate Speech ───────────────────────────────────────────────────────
@@ -62,32 +61,16 @@ class ElevenLabsClient {
     double similarityBoost = 0.75,
     bool useSpeakerBoost = true,
   }) async {
-    if (text.trim().isEmpty) throw const ValidationFailure('Text cannot be empty.');
-    if (text.length > 5000) {
-      throw const ValidationFailure(
-          'Text exceeds ElevenLabs limit of 5000 characters.');
+    if (text.trim().isEmpty) {
+      throw const ValidationFailure('Text cannot be empty.');
     }
 
-    final client = await DioClient.instance.getClient(ApiProvider.elevenlabs);
-    final response = await client.post<List<int>>(
-      '/text-to-speech/$voiceId',
-      data: {
-        'text': text,
-        'model_id': 'eleven_multilingual_v2',
-        'voice_settings': {
-          'stability': stability,
-          'similarity_boost': similarityBoost,
-          'use_speaker_boost': useSpeakerBoost,
-        },
-      },
-      options: Options(
-        responseType: ResponseType.bytes,
-        headers: {'Accept': 'audio/mpeg'},
-      ),
+    AppLogger.info(
+      'VEOX: Mocking ElevenLabs speech generation (Offline Mode)',
+      tag: 'TTS',
     );
-
-    AppLogger.debug('ElevenLabs speech: ${response.data!.length} bytes', tag: 'TTS');
-    return Uint8List.fromList(response.data!);
+    await Future<void>.delayed(const Duration(seconds: 1));
+    return Uint8List.fromList([0]); // Dummy bytes
   }
 
   // ── Save Audio ────────────────────────────────────────────────────────────

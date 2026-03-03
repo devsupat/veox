@@ -28,7 +28,10 @@ class SettingsService {
   Future<void> saveApiKey(ApiProvider provider, String key) async {
     _validateKeyFormat(provider, key);
     await SecureStorageService.instance.saveApiKey(provider, key.trim());
-    AppLogger.info('Saved API key for ${provider.displayName}', tag: 'Settings');
+    AppLogger.info(
+      'Saved API key for ${provider.displayName}',
+      tag: 'Settings',
+    );
   }
 
   Future<String?> getApiKey(ApiProvider provider) =>
@@ -79,10 +82,15 @@ class SettingsService {
     } on NetworkFailure catch (e) {
       if (e.statusCode == 401 || e.statusCode == 403) {
         return ApiTestResult(
-            success: false, detail: 'Key rejected (HTTP ${e.statusCode}).');
+          success: false,
+          detail: 'Key rejected (HTTP ${e.statusCode}).',
+        );
       }
       // Any other network error → treat as passing (can't verify, not our fault).
-      return ApiTestResult(success: true, detail: 'Network check skipped: ${e.message}');
+      return ApiTestResult(
+        success: true,
+        detail: 'Network check skipped: ${e.message}',
+      );
     } catch (e) {
       return ApiTestResult(success: false, detail: e.toString());
     }
@@ -96,11 +104,16 @@ class SettingsService {
         await client.get('/models', queryParameters: {'limit': '1'});
       case ApiProvider.anthropic:
         // Anthropic has no lightweight GET; use a minimal completions call.
-        await client.post('/messages', data: {
-          'model': 'claude-3-haiku-20240307',
-          'max_tokens': 1,
-          'messages': [{'role': 'user', 'content': 'hi'}],
-        });
+        await client.post(
+          '/messages',
+          data: {
+            'model': 'claude-3-haiku-20240307',
+            'max_tokens': 1,
+            'messages': [
+              {'role': 'user', 'content': 'hi'},
+            ],
+          },
+        );
       case ApiProvider.elevenlabs:
         await client.get('/user');
       case ApiProvider.suno:

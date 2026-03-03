@@ -1,4 +1,11 @@
-enum AutomationStatus { idle, connecting, connected, busy, error }
+enum AutomationStatus {
+  idle,
+  connecting,
+  connected,
+  busy,
+  error,
+  pausedNeedsLogin,
+}
 
 class AutomationState {
   final AutomationStatus status;
@@ -24,7 +31,8 @@ class AutomationState {
   }) {
     return AutomationState(
       status: status ?? this.status,
-      lastError: lastError, // Allow clearing error by passing null explicitly if needed, but here standard copyWith logic
+      lastError:
+          lastError, // Allow clearing error by passing null explicitly if needed, but here standard copyWith logic
       currentAction: currentAction ?? this.currentAction,
       isBrowserOpen: isBrowserOpen ?? this.isBrowserOpen,
       framesGenerated: framesGenerated ?? this.framesGenerated,
@@ -37,10 +45,10 @@ class SelectorConfig {
   final String generateButton;
   final String downloadButton;
   final String loginButton;
-  
+
   // Default selectors for Google Labs VideoFX (hypothetical, user to update)
   const SelectorConfig({
-    this.promptInput = 'textarea[placeholder*="Describe"]', 
+    this.promptInput = 'textarea[placeholder*="Describe"]',
     this.generateButton = 'button:has-text("Generate")',
     this.downloadButton = 'button[aria-label="Download"]',
     this.loginButton = 'a[href*="accounts.google.com"]',

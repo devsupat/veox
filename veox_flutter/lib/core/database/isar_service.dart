@@ -108,6 +108,62 @@ class IsarService {
     });
   }
 
+  Future<void> replaceProjectScenesAndCharacters(
+    String projectId,
+    List<CharacterModel> characters,
+    List<SceneModel> scenes,
+  ) async {
+    final isar = await db;
+    final project = await isar
+        .collection<ProjectModel>()
+        .filter()
+        .projectIdEqualTo(projectId)
+        .findFirst();
+    if (project == null) return;
+
+    await isar.writeTxn(() async {
+      // Load current relationships
+      await project.characters.load();
+      await project.scenes.load();
+
+      // Delete existing records from disk
+      final oldCharIds = project.characters.map((c) => c.id).toList();
+      final oldSceneIds = project.scenes.map((s) => s.id).toList();
+      await isar.collection<CharacterModel>().deleteAll(oldCharIds);
+      await isar.collection<SceneModel>().deleteAll(oldSceneIds);
+
+      // Clear links
+      project.characters.clear();
+      project.scenes.clear();
+
+      // Save new records
+      await isar.collection<CharacterModel>().putAll(characters);
+      await isar.collection<SceneModel>().putAll(scenes);
+
+      // Add new links
+      project.characters.addAll(characters);
+      project.scenes.addAll(scenes);
+
+      // Save links
+      await project.characters.save();
+      await project.scenes.save();
+    });
+  }
+
+  Future<List<SceneModel>> getScenesByProjectId(String projectId) async {
+    final isar = await db;
+    final project = await isar
+        .collection<ProjectModel>()
+        .filter()
+        .projectIdEqualTo(projectId)
+        .findFirst();
+    if (project == null) return [];
+    await project.scenes.load();
+    final scenes = project.scenes.toList();
+    scenes.sort((a, b) => a.index.compareTo(b.index));
+    return scenes;
+  }
+
   Future<List<SceneModel>> getAllScenes() async {
     final isar = await db;
     return await isar.collection<SceneModel>().where().findAll();

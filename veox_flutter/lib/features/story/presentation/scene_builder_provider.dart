@@ -3,8 +3,12 @@
 // Riverpod layer for the Story/Scene Builder tab.
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+import 'package:veox_flutter/core/database/isar_service.dart';
 import 'package:veox_flutter/core/utils/logger.dart';
+import 'package:veox_flutter/features/queue/presentation/queue_provider.dart';
 import 'package:veox_flutter/features/story/data/project_model.dart';
 import 'package:veox_flutter/features/story/domain/services/scene_builder_service.dart';
 
@@ -28,8 +32,7 @@ class SceneBuilderState {
   final String? error;
 
   int get totalScenes => scenes.length;
-  double get progress =>
-      totalScenes == 0 ? 0 : completedCount / totalScenes;
+  double get progress => totalScenes == 0 ? 0 : completedCount / totalScenes;
 
   SceneBuilderState copyWith({
     List<SceneModel>? scenes,
@@ -39,23 +42,22 @@ class SceneBuilderState {
     int? completedCount,
     String? error,
     bool clearError = false,
-  }) =>
-      SceneBuilderState(
-        scenes: scenes ?? this.scenes,
-        characters: characters ?? this.characters,
-        isParsing: isParsing ?? this.isParsing,
-        isGenerating: isGenerating ?? this.isGenerating,
-        completedCount: completedCount ?? this.completedCount,
-        error: clearError ? null : (error ?? this.error),
-      );
+  }) => SceneBuilderState(
+    scenes: scenes ?? this.scenes,
+    characters: characters ?? this.characters,
+    isParsing: isParsing ?? this.isParsing,
+    isGenerating: isGenerating ?? this.isGenerating,
+    completedCount: completedCount ?? this.completedCount,
+    error: clearError ? null : (error ?? this.error),
+  );
 }
 
 // ── Provider ──────────────────────────────────────────────────────────────
 
 final sceneBuilderProvider =
     StateNotifierProvider<SceneBuilderNotifier, SceneBuilderState>((ref) {
-  return SceneBuilderNotifier();
-});
+      return SceneBuilderNotifier();
+    });
 
 // ── Notifier ──────────────────────────────────────────────────────────────
 
@@ -80,8 +82,57 @@ class SceneBuilderNotifier extends StateNotifier<SceneBuilderState> {
         completedCount: 0,
       );
     } catch (e) {
-      state =
-          state.copyWith(isParsing: false, error: 'Parse failed: $e');
+      state = state.copyWith(isParsing: false, error: 'Parse failed: $e');
+    }
+  }
+
+  // ── Load directly from Character Studio JSON ──────────────────────────────
+
+  Future<void> loadScenesFromJson(String jsonString, String projectId) async {
+    if (jsonString.trim().isEmpty) return;
+    state = state.copyWith(isParsing: true, clearError: true);
+
+    try {
+      final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
+      final isarSvc = IsarService();
+
+      final charsRaw = decoded['character_reference'] as List? ?? [];
+      final scenesRaw = decoded['scenes'] as List? ?? [];
+
+      final characterModels = charsRaw
+          .map(
+            (c) => CharacterModel()
+              ..characterId = const Uuid().v4()
+              ..name = c['name'] ?? 'Unknown'
+              ..description = c['description'] ?? '',
+          )
+          .toList();
+
+      final sceneModels = scenesRaw
+          .map(
+            (s) => SceneModel()
+              ..sceneId = const Uuid().v4()
+              ..index = s['scene_number'] ?? 0
+              ..text = s['description'] ?? ''
+              ..generatedPrompt = s['prompt'] ?? ''
+              ..status = 'pending',
+          )
+          .toList();
+
+      await isarSvc.replaceProjectScenesAndCharacters(
+        projectId,
+        characterModels,
+        sceneModels,
+      );
+
+      state = state.copyWith(
+        isParsing: false,
+        scenes: sceneModels,
+        characters: characterModels,
+        completedCount: 0,
+      );
+    } catch (e) {
+      state = state.copyWith(isParsing: false, error: 'JSON load failed: $e');
     }
   }
 
@@ -94,27 +145,57 @@ class SceneBuilderNotifier extends StateNotifier<SceneBuilderState> {
     if (state.scenes.isEmpty) return;
 
     state = state.copyWith(
-        isGenerating: true, completedCount: 0, clearError: true);
+      isGenerating: true,
+      completedCount: 0,
+      clearError: true,
+    );
 
     _genSub = _svc
         .generateAllScenes(projectId, maxConcurrent: concurrency)
         .listen(
-      (scene) {
-        final idx = state.scenes.indexWhere((s) => s.sceneId == scene.sceneId);
-        if (idx != -1) {
-          final updated = List<SceneModel>.from(state.scenes);
-          updated[idx] = scene;
-          state = state.copyWith(
-              scenes: updated,
-              completedCount: state.completedCount + 1);
-        }
-      },
-      onDone: () => state = state.copyWith(isGenerating: false),
-      onError: (Object e) {
-        AppLogger.error('Scene generation error: $e', tag: 'SceneBuilder');
-        state = state.copyWith(isGenerating: false, error: e.toString());
-      },
-    );
+          (scene) {
+            final idx = state.scenes.indexWhere(
+              (s) => s.sceneId == scene.sceneId,
+            );
+            if (idx != -1) {
+              final updated = List<SceneModel>.from(state.scenes);
+              updated[idx] = scene;
+              state = state.copyWith(
+                scenes: updated,
+                completedCount: state.completedCount + 1,
+              );
+            }
+          },
+          onDone: () => state = state.copyWith(isGenerating: false),
+          onError: (Object e) {
+            AppLogger.error('Scene generation error: $e', tag: 'SceneBuilder');
+            state = state.copyWith(isGenerating: false, error: e.toString());
+          },
+        );
+  }
+
+  // ── Batch Enqueue to Playwright Engine ────────────────────────────────
+
+  Future<void> batchEnqueueVideos({
+    required WidgetRef ref, // We pass UI ref to trigger queueNotifier
+    required String profileId,
+    required String outputDir,
+    required String projectId,
+  }) async {
+    if (state.scenes.isEmpty) return;
+
+    final prompts = state.scenes.map((s) => s.generatedPrompt).toList();
+    final sceneIds = state.scenes.map((s) => s.sceneId).toList();
+
+    await ref
+        .read(queueNotifierProvider.notifier)
+        .enqueueBulk(
+          prompts: prompts,
+          profileId: profileId,
+          outputDir: outputDir,
+          projectId: projectId,
+          sceneIds: sceneIds,
+        );
   }
 
   Future<void> regenerateSingleScene(String sceneId) async {

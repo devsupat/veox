@@ -62,7 +62,11 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
             // Header
             Row(
               children: [
-                const Icon(LucideIcons.folderPlus, color: Colors.blue, size: 24),
+                const Icon(
+                  LucideIcons.folderPlus,
+                  color: Colors.blue,
+                  size: 24,
+                ),
                 const SizedBox(width: 12),
                 const Text(
                   "Create New Project",
@@ -75,7 +79,11 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
             // Project Name Input
             const Text(
               "Project Name",
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
             ),
             const SizedBox(height: 8),
             Container(
@@ -90,7 +98,11 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
                 decoration: const InputDecoration(
                   hintText: "Enter project name",
                   border: InputBorder.none,
-                  prefixIcon: Icon(LucideIcons.folder, size: 18, color: Colors.grey),
+                  prefixIcon: Icon(
+                    LucideIcons.folder,
+                    size: 18,
+                    color: Colors.grey,
+                  ),
                   contentPadding: EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -100,7 +112,11 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
             // Export Folder Input
             const Text(
               "Export Folder (videos will be saved here)",
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
             ),
             const SizedBox(height: 8),
             Container(
@@ -115,7 +131,11 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
                 style: const TextStyle(fontSize: 13, color: Colors.grey),
                 decoration: const InputDecoration(
                   border: InputBorder.none,
-                  prefixIcon: Icon(LucideIcons.video, size: 18, color: Colors.grey),
+                  prefixIcon: Icon(
+                    LucideIcons.video,
+                    size: 18,
+                    color: Colors.grey,
+                  ),
                   contentPadding: EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -125,7 +145,11 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
             // Info Text
             Text(
               "Project data will be saved to:\n$_baseDataPath/${_nameController.text.isEmpty ? '<project_name>' : _nameController.text}",
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500, height: 1.4),
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade500,
+                height: 1.4,
+              ),
             ),
 
             const SizedBox(height: 32),
@@ -145,7 +169,10 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
                 ElevatedButton.icon(
                   onPressed: () {
                     if (_nameController.text.isNotEmpty) {
-                      widget.onCreate(_nameController.text, _pathController.text);
+                      widget.onCreate(
+                        _nameController.text,
+                        _pathController.text,
+                      );
                       Navigator.pop(context);
                     }
                   },
@@ -154,8 +181,13 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ],

@@ -43,12 +43,51 @@ class CharacterService {
   /// Regex-based name extractor — runs in isolate (no closures).
   static _ExtractResult _extractNames(String text) {
     const stopWords = {
-      'The', 'A', 'An', 'This', 'That', 'Then', 'When', 'Where', 'Why',
-      'How', 'But', 'And', 'Or', 'If', 'So', 'Because', 'While', 'After',
-      'Before', 'Once', 'Suddenly', 'Finally', 'Next', 'Later', 'Meanwhile',
-      'However', 'Although', 'Even', 'Just', 'Only', 'Today', 'Yesterday',
-      'Tomorrow', 'Here', 'There', 'It', 'He', 'She', 'They', 'We', 'You',
-      'I', 'His', 'Her', 'Their',
+      'The',
+      'A',
+      'An',
+      'This',
+      'That',
+      'Then',
+      'When',
+      'Where',
+      'Why',
+      'How',
+      'But',
+      'And',
+      'Or',
+      'If',
+      'So',
+      'Because',
+      'While',
+      'After',
+      'Before',
+      'Once',
+      'Suddenly',
+      'Finally',
+      'Next',
+      'Later',
+      'Meanwhile',
+      'However',
+      'Although',
+      'Even',
+      'Just',
+      'Only',
+      'Today',
+      'Yesterday',
+      'Tomorrow',
+      'Here',
+      'There',
+      'It',
+      'He',
+      'She',
+      'They',
+      'We',
+      'You',
+      'I',
+      'His',
+      'Her',
+      'Their',
     };
 
     final nameRegex = RegExp(r'\b[A-Z][a-z]{2,}(?:\s[A-Z][a-z]+)?\b');
@@ -63,11 +102,12 @@ class CharacterService {
 
     // Keep names appearing more than once (or any name in short texts).
     final minCount = text.length < 500 ? 1 : 2;
-    final result = frequency.entries
-        .where((e) => e.value >= minCount)
-        .map((e) => e.key)
-        .toList()
-      ..sort((a, b) => frequency[b]!.compareTo(frequency[a]!));
+    final result =
+        frequency.entries
+            .where((e) => e.value >= minCount)
+            .map((e) => e.key)
+            .toList()
+          ..sort((a, b) => frequency[b]!.compareTo(frequency[a]!));
 
     return result.take(20).toList(); // Cap at 20 unique characters
   }
@@ -108,16 +148,23 @@ class CharacterService {
     AppLogger.info('Generating image for "${character.name}"', tag: 'CharSvc');
 
     String imagePath;
-    final hasReplicate =
-        await SecureStorageService.instance.hasKey(ApiProvider.replicate);
+    final hasReplicate = await SecureStorageService.instance.hasKey(
+      ApiProvider.replicate,
+    );
 
     if (hasReplicate) {
       final url = await _imgClient.generateViaReplicate(req);
-      imagePath = await _imgClient.downloadAndSave(url, subfolder: 'characters');
+      imagePath = await _imgClient.downloadAndSave(
+        url,
+        subfolder: 'characters',
+      );
     } else {
       // Fallback to local SD WebUI
       final base64 = await _imgClient.generateViaLocalSD(req);
-      imagePath = await _imgClient.saveBase64Image(base64, subfolder: 'characters');
+      imagePath = await _imgClient.saveBase64Image(
+        base64,
+        subfolder: 'characters',
+      );
     }
 
     // Persist to Isar
@@ -127,8 +174,10 @@ class CharacterService {
       await isar.characterModels.put(character);
     });
 
-    AppLogger.info('Character "${character.name}" image saved: $imagePath',
-        tag: 'CharSvc');
+    AppLogger.info(
+      'Character "${character.name}" image saved: $imagePath',
+      tag: 'CharSvc',
+    );
     return character;
   }
 
@@ -136,8 +185,10 @@ class CharacterService {
 
   Future<List<CharacterModel>> getAll(int isarProjectId) async {
     final isar = await IsarService().db;
-    final project =
-        await isar.projectModels.filter().idEqualTo(isarProjectId).findFirst();
+    final project = await isar.projectModels
+        .filter()
+        .idEqualTo(isarProjectId)
+        .findFirst();
     if (project == null) return [];
     await project.characters.load();
     return project.characters.toList();
@@ -165,8 +216,9 @@ class CharacterService {
     final desc = character.description?.isNotEmpty == true
         ? character.description!
         : 'a person';
-    final styleClause =
-        style != null && style.isNotEmpty ? ', $style style' : '';
+    final styleClause = style != null && style.isNotEmpty
+        ? ', $style style'
+        : '';
     return 'Portrait of ${character.name}, $desc$styleClause, '
         'highly detailed, cinematic lighting, 8K, sharp focus';
   }

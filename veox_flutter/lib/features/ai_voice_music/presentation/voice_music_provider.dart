@@ -46,24 +46,23 @@ class VoiceMusicState {
     bool? isMusicGenerating,
     String? error,
     bool clearError = false,
-  }) =>
-      VoiceMusicState(
-        selectedVoiceId: selectedVoiceId ?? this.selectedVoiceId,
-        isGenerating: isGenerating ?? this.isGenerating,
-        generatingSceneIndex: generatingSceneIndex ?? this.generatingSceneIndex,
-        completedScenes: completedScenes ?? this.completedScenes,
-        musicPath: musicPath ?? this.musicPath,
-        isMusicGenerating: isMusicGenerating ?? this.isMusicGenerating,
-        error: clearError ? null : (error ?? this.error),
-      );
+  }) => VoiceMusicState(
+    selectedVoiceId: selectedVoiceId ?? this.selectedVoiceId,
+    isGenerating: isGenerating ?? this.isGenerating,
+    generatingSceneIndex: generatingSceneIndex ?? this.generatingSceneIndex,
+    completedScenes: completedScenes ?? this.completedScenes,
+    musicPath: musicPath ?? this.musicPath,
+    isMusicGenerating: isMusicGenerating ?? this.isMusicGenerating,
+    error: clearError ? null : (error ?? this.error),
+  );
 }
 
 // ── Notifier ──────────────────────────────────────────────────────────────
 
 final voiceMusicNotifierProvider =
     StateNotifierProvider<VoiceMusicNotifier, VoiceMusicState>((ref) {
-  return VoiceMusicNotifier();
-});
+      return VoiceMusicNotifier();
+    });
 
 class VoiceMusicNotifier extends StateNotifier<VoiceMusicState> {
   VoiceMusicNotifier() : super(const VoiceMusicState());
@@ -88,23 +87,26 @@ class VoiceMusicNotifier extends StateNotifier<VoiceMusicState> {
       ..sort((a, b) => a.index.compareTo(b.index));
 
     state = state.copyWith(
-        isGenerating: true, completedScenes: [], clearError: true);
+      isGenerating: true,
+      completedScenes: [],
+      clearError: true,
+    );
 
     _sub = _svc
         .generateBulkVoices(scenes, voiceId: state.selectedVoiceId)
         .listen(
-      (progress) {
-        if (progress.audioPath.isNotEmpty) {
-          state = state.copyWith(
-            generatingSceneIndex: progress.sceneIndex,
-            completedScenes: [...state.completedScenes, progress.audioPath],
-          );
-        }
-      },
-      onDone: () => state = state.copyWith(isGenerating: false),
-      onError: (Object e) =>
-          state = state.copyWith(isGenerating: false, error: e.toString()),
-    );
+          (progress) {
+            if (progress.audioPath.isNotEmpty) {
+              state = state.copyWith(
+                generatingSceneIndex: progress.sceneIndex,
+                completedScenes: [...state.completedScenes, progress.audioPath],
+              );
+            }
+          },
+          onDone: () => state = state.copyWith(isGenerating: false),
+          onError: (Object e) =>
+              state = state.copyWith(isGenerating: false, error: e.toString()),
+        );
   }
 
   /// Generates background music and downloads it.

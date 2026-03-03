@@ -17,7 +17,8 @@ String failureToMessage(Failure failure) {
       '"$tool" is not installed. Run: brew install $tool',
     NetworkFailure(:final statusCode) when statusCode == 429 =>
       'Rate limit hit. Wait a moment and try again.',
-    NetworkFailure(:final statusCode) when statusCode != null && statusCode >= 500 =>
+    NetworkFailure(:final statusCode)
+        when statusCode != null && statusCode >= 500 =>
       'The API server is having issues. Try again shortly.',
     NetworkFailure() => failure.message,
     ProcessFailure() => 'Process error: ${failure.message}',
@@ -60,8 +61,11 @@ void showErrorSnackbar(BuildContext context, Failure failure) {
 }
 
 /// Shows a blocking [AlertDialog] for critical errors.
-Future<void> showErrorDialog(BuildContext context, Failure failure,
-    {String? title}) async {
+Future<void> showErrorDialog(
+  BuildContext context,
+  Failure failure, {
+  String? title,
+}) async {
   if (!context.mounted) return;
 
   final msg = failureToMessage(failure);
@@ -91,8 +95,10 @@ class VeoxProviderObserver extends ProviderObserver {
     Object? value,
     ProviderContainer container,
   ) {
-    AppLogger.debug('Provider added: ${provider.name ?? provider.runtimeType}',
-        tag: 'Riverpod');
+    AppLogger.debug(
+      'Provider added: ${provider.name ?? provider.runtimeType}',
+      tag: 'Riverpod',
+    );
   }
 
   @override
@@ -103,8 +109,9 @@ class VeoxProviderObserver extends ProviderObserver {
     ProviderContainer container,
   ) {
     AppLogger.debug(
-        'Provider updated: ${provider.name ?? provider.runtimeType}',
-        tag: 'Riverpod');
+      'Provider updated: ${provider.name ?? provider.runtimeType}',
+      tag: 'Riverpod',
+    );
   }
 
   @override

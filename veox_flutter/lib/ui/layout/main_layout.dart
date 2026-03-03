@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veox_flutter/providers/app_state.dart';
+import 'package:veox_flutter/providers/navigation_provider.dart';
 import 'package:veox_flutter/ui/pages/home_tab.dart';
 import 'package:veox_flutter/ui/pages/reels_tab.dart';
 import 'package:veox_flutter/ui/pages/projects_tab.dart';
@@ -14,15 +16,14 @@ import 'package:veox_flutter/ui/pages/clone_tab.dart';
 import 'package:veox_flutter/ui/widgets/create_project_dialog.dart';
 import 'package:veox_flutter/ui/widgets/paste_prompts_dialog.dart';
 
-class MainLayout extends StatefulWidget {
+class MainLayout extends ConsumerStatefulWidget {
   const MainLayout({super.key});
 
   @override
-  State<MainLayout> createState() => _MainLayoutState();
+  ConsumerState<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends State<MainLayout> {
-  String _activeTab = 'home';
+class _MainLayoutState extends ConsumerState<MainLayout> {
   bool _terminalExpanded = false;
 
   @override
@@ -32,7 +33,7 @@ class _MainLayoutState extends State<MainLayout> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final appState = context.read<AppState>();
       if (appState.activeProjectId == null) {
-        setState(() => _activeTab = 'projects');
+        ref.read(activeTabProvider.notifier).state = 'projects';
       }
     });
   }
@@ -42,13 +43,10 @@ class _MainLayoutState extends State<MainLayout> {
       showDialog(
         context: context,
         builder: (context) => PastePromptsDialog(
-          onPromptsAdded: (text) {
+          onPromptsAdded: (prompts) {
             final appState = context.read<AppState>();
-            final lines = text.split('\n');
-            for (final line in lines) {
-              if (line.trim().isNotEmpty) {
-                appState.addScene(line.trim());
-              }
+            for (final prompt in prompts) {
+              appState.addScene(prompt);
             }
           },
         ),
@@ -65,12 +63,12 @@ class _MainLayoutState extends State<MainLayout> {
     }
   }
 
-  @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final activeTab = ref.watch(activeTabProvider);
 
     Widget content;
-    switch (_activeTab) {
+    switch (activeTab) {
       case 'home':
         content = const HomeTab();
         break;
@@ -85,7 +83,8 @@ class _MainLayoutState extends State<MainLayout> {
         break;
       case 'projects':
         content = ProjectsTab(
-          onProjectSelected: () => setState(() => _activeTab = 'home'),
+          onProjectSelected: () =>
+              ref.read(activeTabProvider.notifier).state = 'home',
         );
         break;
       case 'aivoice':
@@ -101,7 +100,7 @@ class _MainLayoutState extends State<MainLayout> {
         content = const SceneBuilderTab();
         break;
       default:
-        content = Center(child: Text("Coming Soon: $_activeTab"));
+        content = Center(child: Text("Coming Soon: $activeTab"));
     }
 
     return Scaffold(
@@ -117,12 +116,12 @@ class _MainLayoutState extends State<MainLayout> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Left Sidebar (Navigator) - Hide for clone and mastering tab
-                if (_activeTab != 'clone' && _activeTab != 'mastering')
+                if (activeTab != 'clone' && activeTab != 'mastering')
                   _buildLeftSidebar(context, appState),
 
                 // Content
                 Expanded(
-                  child: (_activeTab == 'clone' || _activeTab == 'mastering')
+                  child: (activeTab == 'clone' || activeTab == 'mastering')
                       ? content // Full width/height for immersive tabs
                       : Container(
                           margin: const EdgeInsets.all(16),
@@ -143,7 +142,7 @@ class _MainLayoutState extends State<MainLayout> {
                 ),
 
                 // Right Sidebar (Status) - Hide for clone and mastering tab
-                if (_activeTab != 'clone' && _activeTab != 'mastering')
+                if (activeTab != 'clone' && activeTab != 'mastering')
                   _buildRightSidebar(context, appState),
               ],
             ),
@@ -507,11 +506,12 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   Widget _buildTab(String id, String label, IconData icon) {
-    final isActive = _activeTab == id;
+    final activeTab = ref.watch(activeTabProvider);
+    final isActive = activeTab == id;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       child: TextButton.icon(
-        onPressed: () => setState(() => _activeTab = id),
+        onPressed: () => ref.read(activeTabProvider.notifier).state = id,
         style: TextButton.styleFrom(
           backgroundColor: isActive
               ? Theme.of(context).primaryColor

@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:veox_flutter/features/history/providers/scene_history_provider.dart';
+import 'package:veox_flutter/features/queue/presentation/queue_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class JobQueueDialog extends ConsumerWidget {
   const JobQueueDialog({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scenesAsync = ref.watch(sceneHistoryProvider);
+    final tasksAsync = ref.watch(taskListProvider);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -34,21 +38,81 @@ class JobQueueDialog extends ConsumerWidget {
             ),
             const Divider(),
             Expanded(
-              child: scenesAsync.when(
-                data: (scenes) {
-                  if (scenes.isEmpty) {
+              child: tasksAsync.when(
+                data: (tasks) {
+                  if (tasks.isEmpty) {
                     return const Center(child: Text("No jobs in the queue."));
                   }
 
                   // Sort so most recent is top
-                  final sortedScenes = List.from(scenes)
-                    ..sort((a, b) => b.id.compareTo(a.id));
+                  final sortedTasks = List.from(tasks)
+                    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
                   return ListView.builder(
-                    itemCount: sortedScenes.length,
+                    itemCount: sortedTasks.length,
                     itemBuilder: (context, index) {
-                      final scene = sortedScenes[index];
-                      final isGenerating = scene.status == "generating";
+                      final task = sortedTasks[index];
+                      final isGenerating =
+                          task.status == "running" ||
+                          task.status == "pending" ||
+                          task.status == 'retrying';
+
+                      IconData statusIcon = LucideIcons.circle;
+                      Color statusColor = Colors.grey;
+
+                      if (task.status == 'running') {
+                        statusIcon = LucideIcons.loader;
+                        statusColor = Colors.blue;
+                      } else if (task.status == 'completed') {
+                        statusIcon = LucideIcons.checkCircle;
+                        statusColor = Colors.green;
+                      } else if (task.status == 'failed') {
+                        statusIcon = LucideIcons.xCircle;
+                        statusColor = Colors.red;
+                      } else if (task.status == 'canceled') {
+                        statusIcon = LucideIcons.minusCircle;
+                        statusColor = Colors.grey;
+                      } else if (task.status == 'paused_needs_login') {
+                        statusIcon = LucideIcons.pauseCircle;
+                        statusColor = Colors.orange;
+                      }
+
+                      // Error tag
+                      String statusText = task.status;
+                      if (task.status == 'failed' &&
+                          task.errorCategory != null) {
+                        statusText = "failed (${task.errorCategory})";
+                      }
+
+                      // Debug Artifact action
+                      Widget? subtitleAction;
+                      if (task.status == 'failed') {
+                        // Check if debug folder exists
+                        subtitleAction = InkWell(
+                          onTap: () async {
+                            // Use url_launcher to open the directory
+                            final appDocDir =
+                                await getApplicationDocumentsDirectory();
+                            final debugDir = Directory(
+                              p.join(appDocDir.path, 'VEOX', 'videos', 'debug'),
+                            );
+                            if (debugDir.existsSync()) {
+                              final uri = Uri.directory(debugDir.path);
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                              }
+                            }
+                          },
+                          child: const Text(
+                            ' Open Debug',
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontSize: 12,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        );
+                      }
 
                       return ListTile(
                         leading: isGenerating
@@ -59,23 +123,20 @@ class JobQueueDialog extends ConsumerWidget {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : Icon(
-                                scene.status == "failed"
-                                    ? LucideIcons.xCircle
-                                    : LucideIcons.checkCircle,
-                                color: scene.status == "failed"
-                                    ? Colors.red
-                                    : Colors.green,
-                              ),
+                            : Icon(statusIcon, color: statusColor),
                         title: Text(
-                          scene.generatedPrompt.isNotEmpty
-                              ? scene.generatedPrompt
-                              : "Empty Prompt",
+                          task.type,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        subtitle: Text(
-                          "Status: ${scene.status} | ID: ${scene.id}",
+                        subtitle: Row(
+                          children: [
+                            Text(
+                              "Status: $statusText | ID: ${task.taskId.substring(0, 8)}...",
+                            ),
+                            if (subtitleAction != null) subtitleAction,
+                          ],
                         ),
                         trailing: IconButton(
                           icon: const Icon(
@@ -83,7 +144,7 @@ class JobQueueDialog extends ConsumerWidget {
                             color: Colors.red,
                           ),
                           onPressed: () {
-                            // TODO: Add delete logic
+                            // TODO: Add delete logic via QueueService
                           },
                         ),
                       );

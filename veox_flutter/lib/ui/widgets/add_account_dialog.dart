@@ -35,14 +35,21 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Email Input
             TextField(
               controller: _emailController,
               decoration: InputDecoration(
                 labelText: "Email/Username",
-                labelStyle: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.w500),
-                prefixIcon: Icon(LucideIcons.mail, size: 20, color: Colors.grey.shade600),
+                labelStyle: TextStyle(
+                  color: Colors.blue.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+                prefixIcon: Icon(
+                  LucideIcons.mail,
+                  size: 20,
+                  color: Colors.grey.shade600,
+                ),
                 enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
                 ),
@@ -60,14 +67,19 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
               obscureText: _obscurePassword,
               decoration: InputDecoration(
                 hintText: "Password",
-                prefixIcon: Icon(LucideIcons.lock, size: 20, color: Colors.grey.shade600),
+                prefixIcon: Icon(
+                  LucideIcons.lock,
+                  size: 20,
+                  color: Colors.grey.shade600,
+                ),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
                     size: 20,
                     color: Colors.grey.shade600,
                   ),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
                 enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey.shade300),
@@ -78,7 +90,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            
+
             const Text(
               "Tip: You can paste passwords here (Ctrl+V)",
               style: TextStyle(
@@ -103,16 +115,27 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
                 const SizedBox(width: 12),
                 ElevatedButton(
                   onPressed: () {
-                    if (_emailController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
-                      widget.onAdd(_emailController.text, _passwordController.text);
+                    if (_emailController.text.isNotEmpty &&
+                        _passwordController.text.isNotEmpty) {
+                      widget.onAdd(
+                        _emailController.text,
+                        _passwordController.text,
+                      );
                       Navigator.pop(context);
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3B648F), // Darker blue from screenshot
+                    backgroundColor: const Color(
+                      0xFF3B648F,
+                    ), // Darker blue from screenshot
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                     elevation: 0,
                   ),
                   child: const Text("Add"),

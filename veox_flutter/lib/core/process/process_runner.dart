@@ -103,7 +103,10 @@ class ProcessRunner {
   }) async* {
     await _assertInstalled(executable);
 
-    AppLogger.debug('\$ $executable ${args.join(' ')} [streaming]', tag: 'Process');
+    AppLogger.debug(
+      '\$ $executable ${args.join(' ')} [streaming]',
+      tag: 'Process',
+    );
 
     final process = await Process.start(
       executable,
@@ -117,7 +120,9 @@ class ProcessRunner {
 
     // Yield stdout lines.
     await for (final line
-        in process.stdout.transform(utf8.decoder).transform(const LineSplitter())) {
+        in process.stdout
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())) {
       yield line;
     }
 
@@ -143,11 +148,9 @@ class ProcessRunner {
     if (_toolCache.containsKey(executable)) return _toolCache[executable]!;
 
     try {
-      final result = await Process.run(
-        Platform.isWindows ? 'where' : 'which',
-        [executable],
-        runInShell: false,
-      );
+      final result = await Process.run(Platform.isWindows ? 'where' : 'which', [
+        executable,
+      ], runInShell: false);
       final found = result.exitCode == 0;
       _toolCache[executable] = found;
       return found;

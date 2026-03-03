@@ -86,29 +86,36 @@ class YtDlpClient {
     await ProcessRunner.instance.run(_exe, [
       '--write-subs',
       '--write-auto-subs',
-      '--sub-lang', 'en',
+      '--sub-lang',
+      'en',
       '--skip-download',
-      '--sub-format', 'vtt',
-      '--convert-subs', 'vtt',
-      '--output', outputBase,
+      '--sub-format',
+      'vtt',
+      '--convert-subs',
+      'vtt',
+      '--output',
+      outputBase,
       '--no-playlist',
       url,
     ], throwOnError: false);
 
     // yt-dlp appends a suffix like `.en.vtt`
     final dir = Directory(tmpDir.path);
-    final vttFile = dir
-        .listSync()
-        .whereType<File>()
-        .where((f) =>
-            f.path.startsWith(outputBase) && f.path.endsWith('.vtt'))
-        .toList()
-      ..sort((a, b) => a.path.compareTo(b.path));
+    final vttFile =
+        dir
+            .listSync()
+            .whereType<File>()
+            .where(
+              (f) => f.path.startsWith(outputBase) && f.path.endsWith('.vtt'),
+            )
+            .toList()
+          ..sort((a, b) => a.path.compareTo(b.path));
 
     if (vttFile.isEmpty) {
       throw const FileSystemFailure(
-          'No transcript available for this video. '
-          'Try a video with manual subtitles.');
+        'No transcript available for this video. '
+        'Try a video with manual subtitles.',
+      );
     }
 
     final vttText = vttFile.first.readAsStringSync();
@@ -127,7 +134,8 @@ class YtDlpClient {
     final lines = vtt.split('\n');
     final textLines = <String>[];
     final timestampRegex = RegExp(
-        r'\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}');
+      r'\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}',
+    );
     final tagRegex = RegExp(r'<[^>]+>');
 
     for (final line in lines) {
@@ -139,7 +147,7 @@ class YtDlpClient {
       if (RegExp(r'^\d+$').hasMatch(trimmed)) continue; // cue identifier
 
       final clean = trimmed
-          .replaceAll(tagRegex, '')  // remove <b>, <i>, <c.color> tags
+          .replaceAll(tagRegex, '') // remove <b>, <i>, <c.color> tags
           .replaceAll('&amp;', '&')
           .replaceAll('&lt;', '<')
           .replaceAll('&gt;', '>')

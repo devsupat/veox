@@ -31,21 +31,20 @@ class YouTubeCloneState {
     bool? isRunning,
     String? error,
     bool clearError = false,
-  }) =>
-      YouTubeCloneState(
-        step: step ?? this.step,
-        message: message ?? this.message,
-        prompts: prompts ?? this.prompts,
-        sourceUrl: sourceUrl ?? this.sourceUrl,
-        isRunning: isRunning ?? this.isRunning,
-        error: clearError ? null : (error ?? this.error),
-      );
+  }) => YouTubeCloneState(
+    step: step ?? this.step,
+    message: message ?? this.message,
+    prompts: prompts ?? this.prompts,
+    sourceUrl: sourceUrl ?? this.sourceUrl,
+    isRunning: isRunning ?? this.isRunning,
+    error: clearError ? null : (error ?? this.error),
+  );
 }
 
 final youtubecloneNotifierProvider =
     StateNotifierProvider<YouTubeCloneNotifier, YouTubeCloneState>((ref) {
-  return YouTubeCloneNotifier();
-});
+      return YouTubeCloneNotifier();
+    });
 
 class YouTubeCloneNotifier extends StateNotifier<YouTubeCloneState> {
   YouTubeCloneNotifier() : super(const YouTubeCloneState());
@@ -59,7 +58,11 @@ class YouTubeCloneNotifier extends StateNotifier<YouTubeCloneState> {
     if (state.sourceUrl.trim().isEmpty) return;
 
     state = state.copyWith(
-        isRunning: true, prompts: [], clearError: true, step: CloneStep.fetchingInfo);
+      isRunning: true,
+      prompts: [],
+      clearError: true,
+      step: CloneStep.fetchingInfo,
+    );
 
     _sub = _svc.cloneVideo(state.sourceUrl).listen(
       (progress) {
@@ -67,7 +70,9 @@ class YouTubeCloneNotifier extends StateNotifier<YouTubeCloneState> {
           step: progress.step,
           message: progress.message ?? '',
           prompts: progress.prompts ?? state.prompts,
-          isRunning: progress.step != CloneStep.done && progress.step != CloneStep.failed,
+          isRunning:
+              progress.step != CloneStep.done &&
+              progress.step != CloneStep.failed,
           error: progress.step == CloneStep.failed ? progress.message : null,
         );
       },

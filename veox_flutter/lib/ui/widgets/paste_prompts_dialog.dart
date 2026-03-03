@@ -1,7 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 
 class PastePromptsDialog extends StatefulWidget {
-  final Function(String text) onPromptsAdded;
+  final Function(List<String> prompts) onPromptsAdded;
 
   const PastePromptsDialog({super.key, required this.onPromptsAdded});
 
@@ -68,7 +69,8 @@ class _PastePromptsDialogState extends State<PastePromptsDialog> {
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(16),
-                    hintText: "Paste JSON (auto-extracts [...]) or plain text (one prompt per line)",
+                    hintText:
+                        "Paste JSON (auto-extracts [...]) or plain text (one prompt per line)",
                     hintStyle: TextStyle(color: Colors.grey),
                   ),
                 ),
@@ -77,7 +79,10 @@ class _PastePromptsDialogState extends State<PastePromptsDialog> {
             const SizedBox(height: 16),
             Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(4),
@@ -103,8 +108,32 @@ class _PastePromptsDialogState extends State<PastePromptsDialog> {
                 const SizedBox(width: 12),
                 ElevatedButton(
                   onPressed: () {
-                    if (_controller.text.trim().isNotEmpty) {
-                      widget.onPromptsAdded(_controller.text);
+                    final text = _controller.text.trim();
+                    if (text.isEmpty) return;
+
+                    List<String> prompts = [];
+                    // Try to parse as JSON if it looks like a JSON array
+                    if (text.startsWith('[') && text.endsWith(']')) {
+                      try {
+                        final dynamic decoded = jsonDecode(text);
+                        if (decoded is List) {
+                          prompts = decoded.map((e) => e.toString()).toList();
+                        }
+                      } catch (_) {
+                        // Fallback to plain text
+                      }
+                    }
+
+                    if (prompts.isEmpty) {
+                      prompts = text
+                          .split('\n')
+                          .map((l) => l.trim())
+                          .where((l) => l.isNotEmpty)
+                          .toList();
+                    }
+
+                    if (prompts.isNotEmpty) {
+                      widget.onPromptsAdded(prompts);
                       Navigator.pop(context);
                     }
                   },
@@ -113,10 +142,18 @@ class _PastePromptsDialogState extends State<PastePromptsDialog> {
                     foregroundColor: Colors.black87,
                     elevation: 0,
                     side: BorderSide(color: Colors.grey.shade300),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  child: const Text("Load Scenes", style: TextStyle(fontWeight: FontWeight.w600)),
+                  child: const Text(
+                    "Load Scenes",
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ),
               ],
             ),

@@ -20,10 +20,7 @@ import 'package:veox_flutter/features/story/data/llm_client.dart';
 import 'package:veox_flutter/features/story/data/project_model.dart';
 
 class SceneParseResult {
-  const SceneParseResult({
-    required this.characters,
-    required this.scenes,
-  });
+  const SceneParseResult({required this.characters, required this.scenes});
   final List<CharacterModel> characters;
   final List<SceneModel> scenes;
 }
@@ -64,15 +61,19 @@ class SceneBuilderService {
     }).toList();
 
     // Convert ParsedScene → SceneModel
-    final sceneModels = parsed.scenes.asMap().map((i, s) {
-      final model = SceneModel()
-        ..sceneId = const Uuid().v4()
-        ..index = s.sceneNumber
-        ..text = s.description
-        ..generatedPrompt = s.visualPrompt
-        ..status = 'pending';
-      return MapEntry(i, model);
-    }).values.toList();
+    final sceneModels = parsed.scenes
+        .asMap()
+        .map((i, s) {
+          final model = SceneModel()
+            ..sceneId = const Uuid().v4()
+            ..index = s.sceneNumber
+            ..text = s.description
+            ..generatedPrompt = s.visualPrompt
+            ..status = 'pending';
+          return MapEntry(i, model);
+        })
+        .values
+        .toList();
 
     // Persist in a single transaction
     await isar.writeTxn(() async {
@@ -88,9 +89,10 @@ class SceneBuilderService {
     });
 
     AppLogger.info(
-        'Parsed ${characterModels.length} characters, '
-        '${sceneModels.length} scenes for project $projectId.',
-        tag: 'SceneBuilder');
+      'Parsed ${characterModels.length} characters, '
+      '${sceneModels.length} scenes for project $projectId.',
+      tag: 'SceneBuilder',
+    );
 
     return SceneParseResult(characters: characterModels, scenes: sceneModels);
   }
@@ -115,16 +117,18 @@ class SceneBuilderService {
     }
 
     await project.scenes.load();
-    final pending = project.scenes
-        .where((s) => s.status == 'pending' || s.status == 'failed')
-        .toList()
-      ..sort((a, b) => a.index.compareTo(b.index));
+    final pending =
+        project.scenes
+            .where((s) => s.status == 'pending' || s.status == 'failed')
+            .toList()
+          ..sort((a, b) => a.index.compareTo(b.index));
 
     if (pending.isEmpty) return;
 
     AppLogger.info(
-        'Generating images for ${pending.length} scenes (concurrency=$maxConcurrent).',
-        tag: 'SceneBuilder');
+      'Generating images for ${pending.length} scenes (concurrency=$maxConcurrent).',
+      tag: 'SceneBuilder',
+    );
 
     // Semaphore via active future slots list
     final activeFutures = <Future<SceneModel?>>[];
@@ -136,8 +140,12 @@ class SceneBuilderService {
       try {
         return await _generateSceneImage(scene);
       } catch (e, st) {
-        AppLogger.error('Scene ${scene.index} image failed',
-            tag: 'SceneBuilder', error: e, stackTrace: st);
+        AppLogger.error(
+          'Scene ${scene.index} image failed',
+          tag: 'SceneBuilder',
+          error: e,
+          stackTrace: st,
+        );
         await _markSceneStatus(scene, 'failed', errorMsg: e.toString());
         return null;
       }
@@ -150,9 +158,9 @@ class SceneBuilderService {
     }
 
     while (activeFutures.isNotEmpty) {
-      final completed = await Future.any(activeFutures.map(
-        (f) => f.then((result) => (f, result)),
-      ));
+      final completed = await Future.any(
+        activeFutures.map((f) => f.then((result) => (f, result))),
+      );
 
       activeFutures.remove(completed.$1);
 
@@ -172,15 +180,20 @@ class SceneBuilderService {
 
   Future<SceneModel> generateSingleScene(String sceneId) async {
     final isar = await IsarService().db;
-    final scene =
-        await isar.sceneModels.filter().sceneIdEqualTo(sceneId).findFirst();
+    final scene = await isar.sceneModels
+        .filter()
+        .sceneIdEqualTo(sceneId)
+        .findFirst();
     if (scene == null) throw DatabaseFailure('Scene $sceneId not found.');
     return _generateSceneImage(scene);
   }
 
   Future<SceneModel> _generateSceneImage(SceneModel scene) async {
     await _markSceneStatus(scene, 'generating');
-    AppLogger.info('Generating scene ${scene.index}: "${scene.generatedPrompt.substring(0, scene.generatedPrompt.length.clamp(0, 60))}..."', tag: 'SceneBuilder');
+    AppLogger.info(
+      'Generating scene ${scene.index}: "${scene.generatedPrompt.substring(0, scene.generatedPrompt.length.clamp(0, 60))}..."',
+      tag: 'SceneBuilder',
+    );
 
     final req = ImageGenRequest(
       prompt: scene.generatedPrompt,
@@ -189,8 +202,9 @@ class SceneBuilderService {
       height: 720,
     );
 
-    final hasReplicate =
-        await SecureStorageService.instance.hasKey(ApiProvider.replicate);
+    final hasReplicate = await SecureStorageService.instance.hasKey(
+      ApiProvider.replicate,
+    );
 
     String imagePath;
     if (hasReplicate) {

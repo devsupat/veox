@@ -12,8 +12,6 @@
 import 'dart:convert';
 
 import 'package:veox_flutter/core/errors/failures.dart';
-import 'package:veox_flutter/core/network/dio_client.dart';
-import 'package:veox_flutter/core/storage/secure_storage_service.dart';
 import 'package:veox_flutter/core/utils/logger.dart';
 
 // ---------------------------------------------------------------------------
@@ -51,7 +49,7 @@ class ParsedScene {
           (json['characters_in_scene'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
-              [],
+          [],
     );
   }
 }
@@ -67,7 +65,8 @@ class ParsedCharacter {
   final String description;
   final String appearance;
 
-  factory ParsedCharacter.fromJson(Map<String, dynamic> json) => ParsedCharacter(
+  factory ParsedCharacter.fromJson(Map<String, dynamic> json) =>
+      ParsedCharacter(
         name: json['name'] as String? ?? 'Unknown',
         description: json['description'] as String? ?? '',
         appearance: json['appearance'] as String? ?? '',
@@ -75,10 +74,7 @@ class ParsedCharacter {
 }
 
 class StoryParseResult {
-  const StoryParseResult({
-    required this.characters,
-    required this.scenes,
-  });
+  const StoryParseResult({required this.characters, required this.scenes});
   final List<ParsedCharacter> characters;
   final List<ParsedScene> scenes;
 }
@@ -148,61 +144,34 @@ Return ONLY the enhanced prompt with no explanation.
   // ── Provider routing ──────────────────────────────────────────────────────
 
   Future<String> _callLLM(String userMessage, {String? systemOverride}) async {
-    final hasOpenAI =
-        await SecureStorageService.instance.hasKey(ApiProvider.openai);
-    final hasAnthropic =
-        await SecureStorageService.instance.hasKey(ApiProvider.anthropic);
+    // Stub implementation for offline VEOX
+    AppLogger.info('VEOX: Mocking LLM response (Offline Mode)', tag: 'LLM');
+    await Future<void>.delayed(const Duration(seconds: 1));
 
-    if (hasOpenAI) {
-      try {
-        return await _callOpenAI(userMessage, systemOverride: systemOverride);
-      } catch (e) {
-        AppLogger.warn('OpenAI failed, trying Anthropic: $e', tag: 'LLM');
-        if (hasAnthropic) {
-          return await _callAnthropic(userMessage, systemOverride: systemOverride);
-        }
-        rethrow;
-      }
+    final isEnhance = systemOverride?.contains('enhance') ?? false;
+
+    if (isEnhance) {
+      return "Cinematic, highly detailed, 8k resolution: $userMessage";
     }
 
-    if (hasAnthropic) {
-      return await _callAnthropic(userMessage, systemOverride: systemOverride);
+    return '''
+{
+  "characters": [
+    { "name": "Hero", "description": "A brave protagonist", "appearance": "Wearing armor" }
+  ],
+  "scenes": [
+    {
+      "scene_number": 1,
+      "description": "Opening scene setup",
+      "visual_prompt": "Cinematic shot of a scene",
+      "camera_angle": "wide shot",
+      "lighting": "natural",
+      "mood": "neutral",
+      "characters_in_scene": ["Hero"]
     }
-
-    throw const AuthFailure(
-        'No LLM API key configured. Add OpenAI or Anthropic key in Settings.');
-  }
-
-  Future<String> _callOpenAI(String message, {String? systemOverride}) async {
-    final client = await DioClient.instance.getClient(ApiProvider.openai);
-    final response = await client.post('/chat/completions', data: {
-      'model': 'gpt-4o',
-      'max_tokens': 4096,
-      'temperature': 0.7,
-      'messages': [
-        {'role': 'system', 'content': systemOverride ?? _systemPrompt},
-        {'role': 'user', 'content': message},
-      ],
-    });
-    final content = response.data['choices'][0]['message']['content'] as String;
-    AppLogger.debug('OpenAI response (${content.length} chars)', tag: 'LLM');
-    return content;
-  }
-
-  Future<String> _callAnthropic(String message, {String? systemOverride}) async {
-    final client = await DioClient.instance.getClient(ApiProvider.anthropic);
-    final response = await client.post('/messages', data: {
-      'model': 'claude-3-5-sonnet-20241022',
-      'max_tokens': 4096,
-      'system': systemOverride ?? _systemPrompt,
-      'messages': [
-        {'role': 'user', 'content': message},
-      ],
-    });
-    final content =
-        response.data['content'][0]['text'] as String;
-    AppLogger.debug('Anthropic response (${content.length} chars)', tag: 'LLM');
-    return content;
+  ]
+}
+''';
   }
 
   // ── JSON Parsing ──────────────────────────────────────────────────────────
@@ -225,24 +194,31 @@ Return ONLY the enhanced prompt with no explanation.
 
       final scenes = (data['scenes'] as List<dynamic>? ?? [])
           .asMap()
-          .map((i, s) => MapEntry(
+          .map(
+            (i, s) => MapEntry(
               i,
-              ParsedScene.fromJson(
-                  s as Map<String, dynamic>, i + 1)))
+              ParsedScene.fromJson(s as Map<String, dynamic>, i + 1),
+            ),
+          )
           .values
           .toList();
 
       if (scenes.isEmpty) {
-        throw const ParseFailure('LLM returned zero scenes. Check your story text.');
+        throw const ParseFailure(
+          'LLM returned zero scenes. Check your story text.',
+        );
       }
 
       AppLogger.info(
-          'Parsed ${chars.length} character(s) and ${scenes.length} scene(s).',
-          tag: 'LLM');
+        'Parsed ${chars.length} character(s) and ${scenes.length} scene(s).',
+        tag: 'LLM',
+      );
       return StoryParseResult(characters: chars, scenes: scenes);
     } catch (e) {
       if (e is ParseFailure || e is ValidationFailure) rethrow;
-      throw ParseFailure('Failed to parse LLM JSON response: $e\n\nRaw: $rawText');
+      throw ParseFailure(
+        'Failed to parse LLM JSON response: $e\n\nRaw: $rawText',
+      );
     }
   }
 }

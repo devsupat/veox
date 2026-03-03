@@ -4,7 +4,7 @@
 //
 // Communication protocol: newline-delimited JSON over stdin/stdout.
 //   Flutter → Node: { id, command, params }
-//   Node → Flutter: { id, type: 'result'|'log'|'system', status, data, error }
+//   Node → Flutter: { id, type: 'result'|'event'|'log'|'system', status, data, error }
 //
 // Key design: every `sendCommand()` call returns a `Future` that resolves
 // when the matching response (same `id`) arrives on stdout. This is done via
@@ -18,6 +18,10 @@ import 'package:veox_flutter/core/errors/failures.dart';
 import 'package:veox_flutter/core/utils/logger.dart';
 
 typedef JsonMap = Map<String, dynamic>;
+
+/// Single source of truth for the target automation URL used by all
+/// browser-launch, connect, and diagnostic helpers in this service.
+const kFlowUrl = 'https://labs.google/fx/tools/flow';
 
 /// Events emitted while Node is running — useful for a live log panel.
 class NodeLogEvent {
@@ -46,7 +50,9 @@ class NodeService {
   bool _running = false;
 
   /// How long to wait for any single command response.
-  static const commandTimeout = Duration(minutes: 5);
+  static const commandTimeout = Duration(
+    minutes: 60,
+  ); // Increased for long jobs
 
   /// Pending commands awaiting their matching response from Node.
   final Map<String, Completer<JsonMap>> _pending = {};
@@ -55,6 +61,11 @@ class NodeService {
   final StreamController<NodeLogEvent> _logController =
       StreamController.broadcast();
   Stream<NodeLogEvent> get logStream => _logController.stream;
+
+  /// Broadcast stream of application events (e.g., progress, needs_login).
+  final StreamController<JsonMap> _eventController =
+      StreamController.broadcast();
+  Stream<JsonMap> get eventStream => _eventController.stream;
 
   bool get isRunning => _running;
 
@@ -67,13 +78,32 @@ class NodeService {
     if (_running) return;
 
     final enginePath = _resolveEnginePath();
-    AppLogger.info('Starting Node engine: node $enginePath', tag: 'Node');
+    final engineDir =
+        _resolveEngineDir(); // cwd for node so node_modules are found
+    AppLogger.info(
+      'Starting Node engine: node $enginePath (cwd: $engineDir)',
+      tag: 'Node',
+    );
+
+    // Build environment for the subprocess.
+    final env = Map<String, String>.from(Platform.environment);
+    // PLAYWRIGHT_BROWSERS_PATH=0 → use the browsers bundled with playwright package
+    // rather than a global cache (important for packaged builds).
+    env['PLAYWRIGHT_BROWSERS_PATH'] = env['PLAYWRIGHT_BROWSERS_PATH'] ?? '0';
+    if (kDebugMode) env['VEOX_DEBUG'] = '1';
+    // Allow the headed browser to show on this display (important on macOS/Linux)
+    if (Platform.environment.containsKey('DISPLAY')) {
+      env['DISPLAY'] = Platform.environment['DISPLAY']!;
+    }
 
     try {
       _process = await Process.start(
         'node',
         [enginePath],
-        workingDirectory: kDebugMode ? Directory.current.path : null,
+        workingDirectory: engineDir,
+        environment: env,
+        // runInShell avoids PATH lookup issues on Windows
+        runInShell: Platform.isWindows,
       );
 
       _running = true;
@@ -89,15 +119,33 @@ class NodeService {
                 AppLogger.error('Node stdout error: $e', tag: 'Node'),
           );
 
-      // Stderr → log only (shouldn't happen in normal operation).
+      // Stderr: also parsed + routed. Node errors and crash traces come here.
+      // We try to JSON-decode them first (structured); raw text falls back.
       _process!.stderr
           .transform(utf8.decoder)
-          .listen((data) => AppLogger.warn('Node stderr: $data', tag: 'Node'));
+          .transform(const LineSplitter())
+          .listen((data) {
+            if (data.trim().isEmpty) return;
+            // Try structured parse first
+            try {
+              _handleLine(data);
+            } catch (_) {
+              AppLogger.warn('Node stderr: $data', tag: 'Node');
+              _logController.add(
+                NodeLogEvent(level: 'error', message: '[stderr] $data'),
+              );
+            }
+          });
 
       AppLogger.info('Node engine started (PID ${_process!.pid})', tag: 'Node');
     } catch (e, st) {
       _running = false;
-      AppLogger.error('Failed to start Node engine', tag: 'Node', error: e, stackTrace: st);
+      AppLogger.error(
+        'Failed to start Node engine',
+        tag: 'Node',
+        error: e,
+        stackTrace: st,
+      );
       rethrow;
     }
   }
@@ -119,7 +167,11 @@ class NodeService {
     final completer = Completer<JsonMap>();
     _pending[commandId] = completer;
 
-    final payload = jsonEncode({'id': commandId, 'command': command, 'params': params});
+    final payload = jsonEncode({
+      'id': commandId,
+      'command': command,
+      'params': params,
+    });
     _process!.stdin.writeln(payload);
 
     AppLogger.debug('→ Node [$commandId] $command', tag: 'Node');
@@ -178,20 +230,36 @@ class NodeService {
         if (id != null && _pending.containsKey(id)) {
           final completer = _pending.remove(id)!;
           if (json['status'] == 'error') {
+            final isRetryable = json['retryable'] as bool? ?? true;
+            final category = json['errorCategory'] as String?;
             completer.completeError(
-                ProcessFailure('Node error: ${json['error']}'));
+              ProcessFailure(
+                'Node error: ${json['error']}',
+                retryable: isRetryable,
+                errorCategory: category,
+              ),
+            );
           } else {
             completer.complete(json['data'] as JsonMap? ?? {});
           }
         }
+        break;
+      case 'event':
+        _eventController.add(json);
+        break;
       case 'log':
-        AppLogger.debug('Node: ${json['msg']}', tag: 'Node');
-        _logController.add(NodeLogEvent(
-            level: 'debug', message: json['msg']?.toString() ?? ''));
+        final msg =
+            json['msg']?.toString() ?? json['message']?.toString() ?? '';
+        final lvl = json['level']?.toString() ?? 'debug';
+        AppLogger.debug('Node [$lvl]: $msg', tag: 'Node');
+        _logController.add(NodeLogEvent(level: lvl, message: msg));
+        break;
       case 'system':
         AppLogger.info('Node system: ${json['msg']}', tag: 'Node');
-        _logController.add(NodeLogEvent(
-            level: 'info', message: json['msg']?.toString() ?? ''));
+        _logController.add(
+          NodeLogEvent(level: 'info', message: json['msg']?.toString() ?? ''),
+        );
+        break;
       default:
         AppLogger.debug('Node unknown type: $line', tag: 'Node');
     }
@@ -199,7 +267,10 @@ class NodeService {
 
   void _handleProcessExit() async {
     if (!_running) return; // intentional stop
-    AppLogger.warn('Node engine exited unexpectedly. Restarting...', tag: 'Node');
+    AppLogger.warn(
+      'Node engine exited unexpectedly. Restarting...',
+      tag: 'Node',
+    );
     _running = false;
     await Future<void>.delayed(const Duration(seconds: 2));
     startEngine();
@@ -207,10 +278,47 @@ class NodeService {
 
   String _resolveEnginePath() {
     if (kDebugMode) {
+      // In debug, the engine is at {project root}/engine/main.js.
+      // Directory.current is usually the veox_flutter/ folder when running via `flutter run`.
       return 'engine/main.js';
     }
     // In release builds, engine is bundled next to the executable.
     final exeDir = File(Platform.resolvedExecutable).parent;
     return '${exeDir.path}/engine/main.js';
+  }
+
+  /// Working directory for the node process — must be the engine's parent
+  /// folder so that `require()` resolves node_modules correctly.
+  String _resolveEngineDir() {
+    if (kDebugMode) {
+      // veox_flutter/ is the working dir when running with `flutter run`
+      return Directory.current.path;
+    }
+    // Release: engine lives beside the app executable
+    return File(Platform.resolvedExecutable).parent.path;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Diagnostics + Test helpers
+  // ---------------------------------------------------------------------------
+
+  /// Runs engine.doctor and returns the full diagnostic map.
+  Future<JsonMap> sendDoctor() async {
+    const id = 'doctor-1';
+    return sendCommand(id, 'engine.doctor', {});
+  }
+
+  /// Enqueues a browser visibility test: opens [url] in headed mode for [durationSeconds].
+  Future<JsonMap> enqueueOpenBrowserTest({
+    String url = kFlowUrl,
+    int durationSeconds = 30,
+  }) async {
+    final id = 'browser-test-${DateTime.now().millisecondsSinceEpoch}';
+    return sendCommand(id, 'job_start', {
+      'type': 'open_browser_test',
+      'taskId': id,
+      'url': url,
+      'durationSeconds': durationSeconds,
+    });
   }
 }

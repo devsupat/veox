@@ -27,17 +27,23 @@ class FFmpegCommandBuilder {
     // we use pattern matching for simplicity when all images are sequentially named).
     // For numbered frames: ffmpeg can use glob.
     // We use the concat filter for arbitrary paths.
-    final scaleFilter = 'scale=1920:1080:force_original_aspect_ratio=decrease,'
+    final scaleFilter =
+        'scale=1920:1080:force_original_aspect_ratio=decrease,'
         'pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black';
 
     return [
       '-y',
       // For each image, input with a duration
-      ...imagePaths.expand((p) => ['-loop', '1', '-t', '$secondsPerImage', '-i', p]),
+      ...imagePaths.expand(
+        (p) => ['-loop', '1', '-t', '$secondsPerImage', '-i', p],
+      ),
       '-filter_complex',
       [
         // Concat all images into video stream
-        List.generate(imagePaths.length, (i) => '[$i:v]$scaleFilter[v$i]').join(';'),
+        List.generate(
+          imagePaths.length,
+          (i) => '[$i:v]$scaleFilter[v$i]',
+        ).join(';'),
         '${List.generate(imagePaths.length, (i) => '[v$i]').join('')}'
             'concat=n=${imagePaths.length}:v=1:a=0[v]',
       ].join(';'),
@@ -61,15 +67,22 @@ class FFmpegCommandBuilder {
   }) {
     return [
       '-y',
-      '-i', videoPath,
+      '-i',
+      videoPath,
       if (loopAudio) ...['-stream_loop', '-1'],
-      '-i', audioPath,
-      '-c:v', 'copy',
-      '-c:a', 'aac',
-      '-b:a', '192k',
+      '-i',
+      audioPath,
+      '-c:v',
+      'copy',
+      '-c:a',
+      'aac',
+      '-b:a',
+      '192k',
       '-shortest',
-      '-map', '0:v:0',
-      '-map', '1:a:0',
+      '-map',
+      '0:v:0',
+      '-map',
+      '1:a:0',
       outputPath,
     ];
   }
@@ -88,16 +101,23 @@ class FFmpegCommandBuilder {
   }) {
     return [
       '-y',
-      '-i', videoPath,
-      '-i', logoPath,
+      '-i',
+      videoPath,
+      '-i',
+      logoPath,
       '-filter_complex',
       '[1:v]scale=$logoWidth:-1,format=rgba,colorchannelmixer=aa=$opacity[logo];'
-      '[0:v][logo]overlay=$x:$y[v]',
-      '-map', '[v]',
-      '-map', '0:a?',
-      '-c:v', 'libx264',
-      '-c:a', 'copy',
-      '-preset', 'fast',
+          '[0:v][logo]overlay=$x:$y[v]',
+      '-map',
+      '[v]',
+      '-map',
+      '0:a?',
+      '-c:v',
+      'libx264',
+      '-c:a',
+      'copy',
+      '-preset',
+      'fast',
       outputPath,
     ];
   }
@@ -119,10 +139,14 @@ class FFmpegCommandBuilder {
         '-filter_complex',
         '${videoPaths.asMap().keys.map((i) => '[$i:v][$i:a]').join('')}'
             'concat=n=${videoPaths.length}:v=1:a=1[v][a]',
-        '-map', '[v]',
-        '-map', '[a]',
-        '-c:v', 'libx264',
-        '-c:a', 'aac',
+        '-map',
+        '[v]',
+        '-map',
+        '[a]',
+        '-c:v',
+        'libx264',
+        '-c:a',
+        'aac',
         outputPath,
       ];
     }
@@ -150,11 +174,16 @@ class FFmpegCommandBuilder {
     final h = scale == 2 ? '2160' : '1440';
     return [
       '-y',
-      '-i', inputPath,
-      '-vf', 'scale=$w:$h:flags=lanczos',
-      '-c:v', 'libx264',
-      '-crf', '18',
-      '-preset', 'slow',
+      '-i',
+      inputPath,
+      '-vf',
+      'scale=$w:$h:flags=lanczos',
+      '-c:v',
+      'libx264',
+      '-crf',
+      '18',
+      '-preset',
+      'slow',
       outputPath,
     ];
   }
@@ -172,12 +201,16 @@ class FFmpegCommandBuilder {
     final h = parts[1];
     return [
       '-y',
-      '-i', videoPath,
+      '-i',
+      videoPath,
       '-vf',
       'crop=ih*9/16:ih,scale=$w:$h',
-      '-c:v', 'libx264',
-      '-c:a', 'copy',
-      '-preset', 'fast',
+      '-c:v',
+      'libx264',
+      '-c:a',
+      'copy',
+      '-preset',
+      'fast',
       outputPath,
     ];
   }
@@ -192,11 +225,15 @@ class FFmpegCommandBuilder {
   ) {
     return [
       '-y',
-      '-i', videoPath,
-      '-vf', 'subtitles=$srtPath:force_style='
+      '-i',
+      videoPath,
+      '-vf',
+      'subtitles=$srtPath:force_style='
           "'FontName=Arial,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2'",
-      '-c:v', 'libx264',
-      '-c:a', 'copy',
+      '-c:v',
+      'libx264',
+      '-c:a',
+      'copy',
       outputPath,
     ];
   }
@@ -211,10 +248,14 @@ class FFmpegCommandBuilder {
   }) {
     return [
       '-y',
-      '-ss', '$timestampSeconds',
-      '-i', videoPath,
-      '-vframes', '1',
-      '-q:v', '2',
+      '-ss',
+      '$timestampSeconds',
+      '-i',
+      videoPath,
+      '-vframes',
+      '1',
+      '-q:v',
+      '2',
       outputPath,
     ];
   }

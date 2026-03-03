@@ -33,21 +33,13 @@ const GoogleAccountModelSchema = CollectionSchema(
       name: r'displayName',
       type: IsarType.string,
     ),
-    r'email': PropertySchema(
-      id: 3,
-      name: r'email',
-      type: IsarType.string,
-    ),
-    r'isActive': PropertySchema(
-      id: 4,
-      name: r'isActive',
-      type: IsarType.bool,
-    ),
+    r'email': PropertySchema(id: 3, name: r'email', type: IsarType.string),
+    r'isActive': PropertySchema(id: 4, name: r'isActive', type: IsarType.bool),
     r'lastLogin': PropertySchema(
       id: 5,
       name: r'lastLogin',
       type: IsarType.dateTime,
-    )
+    ),
   },
   estimateSize: _googleAccountModelEstimateSize,
   serialize: _googleAccountModelSerialize,
@@ -65,9 +57,9 @@ const GoogleAccountModelSchema = CollectionSchema(
           name: r'email',
           type: IndexType.hash,
           caseSensitive: true,
-        )
+        ),
       ],
-    )
+    ),
   },
   links: {},
   embeddedSchemas: {},
@@ -159,12 +151,16 @@ Id _googleAccountModelGetId(GoogleAccountModel object) {
 }
 
 List<IsarLinkBase<dynamic>> _googleAccountModelGetLinks(
-    GoogleAccountModel object) {
+  GoogleAccountModel object,
+) {
   return [];
 }
 
 void _googleAccountModelAttach(
-    IsarCollection<dynamic> col, Id id, GoogleAccountModel object) {
+  IsarCollection<dynamic> col,
+  Id id,
+  GoogleAccountModel object,
+) {
   object.id = id;
 }
 
@@ -217,8 +213,10 @@ extension GoogleAccountModelByIndex on IsarCollection<GoogleAccountModel> {
     return putAllByIndex(r'email', objects);
   }
 
-  List<Id> putAllByEmailSync(List<GoogleAccountModel> objects,
-      {bool saveLinks = true}) {
+  List<Id> putAllByEmailSync(
+    List<GoogleAccountModel> objects, {
+    bool saveLinks = true,
+  }) {
     return putAllByIndexSync(r'email', objects, saveLinks: saveLinks);
   }
 }
@@ -235,17 +233,14 @@ extension GoogleAccountModelQueryWhereSort
 extension GoogleAccountModelQueryWhere
     on QueryBuilder<GoogleAccountModel, GoogleAccountModel, QWhereClause> {
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterWhereClause>
-      idEqualTo(Id id) {
+  idEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: id,
-        upper: id,
-      ));
+      return query.addWhereClause(IdWhereClause.between(lower: id, upper: id));
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterWhereClause>
-      idNotEqualTo(Id id) {
+  idNotEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -268,7 +263,7 @@ extension GoogleAccountModelQueryWhere
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterWhereClause>
-      idGreaterThan(Id id, {bool include = false}) {
+  idGreaterThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.greaterThan(lower: id, includeLower: include),
@@ -277,7 +272,7 @@ extension GoogleAccountModelQueryWhere
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterWhereClause>
-      idLessThan(Id id, {bool include = false}) {
+  idLessThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.lessThan(upper: id, includeUpper: include),
@@ -286,63 +281,72 @@ extension GoogleAccountModelQueryWhere
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterWhereClause>
-      idBetween(
+  idBetween(
     Id lowerId,
     Id upperId, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: lowerId,
-        includeLower: includeLower,
-        upper: upperId,
-        includeUpper: includeUpper,
-      ));
+      return query.addWhereClause(
+        IdWhereClause.between(
+          lower: lowerId,
+          includeLower: includeLower,
+          upper: upperId,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterWhereClause>
-      emailEqualTo(String email) {
+  emailEqualTo(String email) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'email',
-        value: [email],
-      ));
+      return query.addWhereClause(
+        IndexWhereClause.equalTo(indexName: r'email', value: [email]),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterWhereClause>
-      emailNotEqualTo(String email) {
+  emailNotEqualTo(String email) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'email',
-              lower: [],
-              upper: [email],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'email',
-              lower: [email],
-              includeLower: false,
-              upper: [],
-            ));
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'email',
+                lower: [],
+                upper: [email],
+                includeUpper: false,
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'email',
+                lower: [email],
+                includeLower: false,
+                upper: [],
+              ),
+            );
       } else {
         return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'email',
-              lower: [email],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'email',
-              lower: [],
-              upper: [email],
-              includeUpper: false,
-            ));
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'email',
+                lower: [email],
+                includeLower: false,
+                upper: [],
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'email',
+                lower: [],
+                upper: [email],
+                includeUpper: false,
+              ),
+            );
       }
     });
   }
@@ -351,71 +355,74 @@ extension GoogleAccountModelQueryWhere
 extension GoogleAccountModelQueryFilter
     on QueryBuilder<GoogleAccountModel, GoogleAccountModel, QFilterCondition> {
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      avatarUrlIsNull() {
+  avatarUrlIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'avatarUrl',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'avatarUrl'),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      avatarUrlIsNotNull() {
+  avatarUrlIsNotNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'avatarUrl',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'avatarUrl'),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      avatarUrlEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
+  avatarUrlEqualTo(String? value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'avatarUrl',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'avatarUrl',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      avatarUrlGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'avatarUrl',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      avatarUrlLessThan(
+  avatarUrlGreaterThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'avatarUrl',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'avatarUrl',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      avatarUrlBetween(
+  avatarUrlLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'avatarUrl',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
+  avatarUrlBetween(
     String? lower,
     String? upper, {
     bool includeLower = true,
@@ -423,209 +430,213 @@ extension GoogleAccountModelQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'avatarUrl',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'avatarUrl',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      avatarUrlStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  avatarUrlStartsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'avatarUrl',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'avatarUrl',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      avatarUrlEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  avatarUrlEndsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'avatarUrl',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'avatarUrl',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      avatarUrlContains(String value, {bool caseSensitive = true}) {
+  avatarUrlContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'avatarUrl',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'avatarUrl',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      avatarUrlMatches(String pattern, {bool caseSensitive = true}) {
+  avatarUrlMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'avatarUrl',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'avatarUrl',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      avatarUrlIsEmpty() {
+  avatarUrlIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'avatarUrl',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'avatarUrl', value: ''),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      avatarUrlIsNotEmpty() {
+  avatarUrlIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'avatarUrl',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'avatarUrl', value: ''),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      createdAtEqualTo(DateTime value) {
+  createdAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'createdAt',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'createdAt', value: value),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      createdAtGreaterThan(
-    DateTime value, {
-    bool include = false,
-  }) {
+  createdAtGreaterThan(DateTime value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'createdAt',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'createdAt',
+          value: value,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      createdAtLessThan(
-    DateTime value, {
-    bool include = false,
-  }) {
+  createdAtLessThan(DateTime value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'createdAt',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'createdAt',
+          value: value,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      createdAtBetween(
+  createdAtBetween(
     DateTime lower,
     DateTime upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'createdAt',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'createdAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      displayNameIsNull() {
+  displayNameIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'displayName',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'displayName'),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      displayNameIsNotNull() {
+  displayNameIsNotNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'displayName',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'displayName'),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      displayNameEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
+  displayNameEqualTo(String? value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'displayName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'displayName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      displayNameGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'displayName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      displayNameLessThan(
+  displayNameGreaterThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'displayName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'displayName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      displayNameBetween(
+  displayNameLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'displayName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
+  displayNameBetween(
     String? lower,
     String? upper, {
     bool includeLower = true,
@@ -633,135 +644,140 @@ extension GoogleAccountModelQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'displayName',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'displayName',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      displayNameStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  displayNameStartsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'displayName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'displayName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      displayNameEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  displayNameEndsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'displayName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'displayName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      displayNameContains(String value, {bool caseSensitive = true}) {
+  displayNameContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'displayName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'displayName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      displayNameMatches(String pattern, {bool caseSensitive = true}) {
+  displayNameMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'displayName',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'displayName',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      displayNameIsEmpty() {
+  displayNameIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'displayName',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'displayName', value: ''),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      displayNameIsNotEmpty() {
+  displayNameIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'displayName',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'displayName', value: ''),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      emailEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  emailEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'email',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'email',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      emailGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'email',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      emailLessThan(
+  emailGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'email',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'email',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      emailBetween(
+  emailLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'email',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
+  emailBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -769,224 +785,223 @@ extension GoogleAccountModelQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'email',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'email',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      emailStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  emailStartsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'email',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'email',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      emailEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  emailEndsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'email',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'email',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      emailContains(String value, {bool caseSensitive = true}) {
+  emailContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'email',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'email',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      emailMatches(String pattern, {bool caseSensitive = true}) {
+  emailMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'email',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'email',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      emailIsEmpty() {
+  emailIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'email',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'email', value: ''),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      emailIsNotEmpty() {
+  emailIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'email',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'email', value: ''),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      idEqualTo(Id value) {
+  idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'id', value: value),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      idGreaterThan(
-    Id value, {
-    bool include = false,
-  }) {
+  idGreaterThan(Id value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      idLessThan(
-    Id value, {
-    bool include = false,
-  }) {
+  idLessThan(Id value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      idBetween(
+  idBetween(
     Id lower,
     Id upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'id',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'id',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      isActiveEqualTo(bool value) {
+  isActiveEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'isActive',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'isActive', value: value),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      lastLoginIsNull() {
+  lastLoginIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'lastLogin',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'lastLogin'),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      lastLoginIsNotNull() {
+  lastLoginIsNotNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'lastLogin',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'lastLogin'),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      lastLoginEqualTo(DateTime? value) {
+  lastLoginEqualTo(DateTime? value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'lastLogin',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'lastLogin', value: value),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      lastLoginGreaterThan(
-    DateTime? value, {
-    bool include = false,
-  }) {
+  lastLoginGreaterThan(DateTime? value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'lastLogin',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'lastLogin',
+          value: value,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      lastLoginLessThan(
-    DateTime? value, {
-    bool include = false,
-  }) {
+  lastLoginLessThan(DateTime? value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'lastLogin',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'lastLogin',
+          value: value,
+        ),
+      );
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterFilterCondition>
-      lastLoginBetween(
+  lastLoginBetween(
     DateTime? lower,
     DateTime? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'lastLogin',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'lastLogin',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 }
@@ -1000,84 +1015,84 @@ extension GoogleAccountModelQueryLinks
 extension GoogleAccountModelQuerySortBy
     on QueryBuilder<GoogleAccountModel, GoogleAccountModel, QSortBy> {
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      sortByAvatarUrl() {
+  sortByAvatarUrl() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'avatarUrl', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      sortByAvatarUrlDesc() {
+  sortByAvatarUrlDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'avatarUrl', Sort.desc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      sortByCreatedAt() {
+  sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      sortByCreatedAtDesc() {
+  sortByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.desc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      sortByDisplayName() {
+  sortByDisplayName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'displayName', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      sortByDisplayNameDesc() {
+  sortByDisplayNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'displayName', Sort.desc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      sortByEmail() {
+  sortByEmail() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'email', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      sortByEmailDesc() {
+  sortByEmailDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'email', Sort.desc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      sortByIsActive() {
+  sortByIsActive() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isActive', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      sortByIsActiveDesc() {
+  sortByIsActiveDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isActive', Sort.desc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      sortByLastLogin() {
+  sortByLastLogin() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastLogin', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      sortByLastLoginDesc() {
+  sortByLastLoginDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastLogin', Sort.desc);
     });
@@ -1087,98 +1102,98 @@ extension GoogleAccountModelQuerySortBy
 extension GoogleAccountModelQuerySortThenBy
     on QueryBuilder<GoogleAccountModel, GoogleAccountModel, QSortThenBy> {
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByAvatarUrl() {
+  thenByAvatarUrl() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'avatarUrl', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByAvatarUrlDesc() {
+  thenByAvatarUrlDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'avatarUrl', Sort.desc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByCreatedAt() {
+  thenByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByCreatedAtDesc() {
+  thenByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.desc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByDisplayName() {
+  thenByDisplayName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'displayName', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByDisplayNameDesc() {
+  thenByDisplayNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'displayName', Sort.desc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByEmail() {
+  thenByEmail() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'email', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByEmailDesc() {
+  thenByEmailDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'email', Sort.desc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenById() {
+  thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByIdDesc() {
+  thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByIsActive() {
+  thenByIsActive() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isActive', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByIsActiveDesc() {
+  thenByIsActiveDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isActive', Sort.desc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByLastLogin() {
+  thenByLastLogin() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastLogin', Sort.asc);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QAfterSortBy>
-      thenByLastLoginDesc() {
+  thenByLastLoginDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastLogin', Sort.desc);
     });
@@ -1188,42 +1203,42 @@ extension GoogleAccountModelQuerySortThenBy
 extension GoogleAccountModelQueryWhereDistinct
     on QueryBuilder<GoogleAccountModel, GoogleAccountModel, QDistinct> {
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QDistinct>
-      distinctByAvatarUrl({bool caseSensitive = true}) {
+  distinctByAvatarUrl({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'avatarUrl', caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QDistinct>
-      distinctByCreatedAt() {
+  distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QDistinct>
-      distinctByDisplayName({bool caseSensitive = true}) {
+  distinctByDisplayName({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'displayName', caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QDistinct>
-      distinctByEmail({bool caseSensitive = true}) {
+  distinctByEmail({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'email', caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QDistinct>
-      distinctByIsActive() {
+  distinctByIsActive() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isActive');
     });
   }
 
   QueryBuilder<GoogleAccountModel, GoogleAccountModel, QDistinct>
-      distinctByLastLogin() {
+  distinctByLastLogin() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastLogin');
     });
@@ -1239,21 +1254,21 @@ extension GoogleAccountModelQueryProperty
   }
 
   QueryBuilder<GoogleAccountModel, String?, QQueryOperations>
-      avatarUrlProperty() {
+  avatarUrlProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'avatarUrl');
     });
   }
 
   QueryBuilder<GoogleAccountModel, DateTime, QQueryOperations>
-      createdAtProperty() {
+  createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
     });
   }
 
   QueryBuilder<GoogleAccountModel, String?, QQueryOperations>
-      displayNameProperty() {
+  displayNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'displayName');
     });
@@ -1272,7 +1287,7 @@ extension GoogleAccountModelQueryProperty
   }
 
   QueryBuilder<GoogleAccountModel, DateTime?, QQueryOperations>
-      lastLoginProperty() {
+  lastLoginProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastLogin');
     });
